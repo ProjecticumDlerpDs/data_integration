@@ -1,0 +1,8 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+
+# Ignore folders
+bewerkte_data/
+raw_data/
