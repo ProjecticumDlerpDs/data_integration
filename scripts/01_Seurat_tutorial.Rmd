@@ -16,6 +16,7 @@ knitr::opts_chunk$set(echo = FALSE)
 library(dplyr)
 library(Seurat)
 library(patchwork)
+library(here)
 if (!tinytex::is_tinytex()){
   tinytex::install_tinytex()
 }
@@ -25,7 +26,7 @@ if (!tinytex::is_tinytex()){
 In de vioolplot worden de features, counts en percentage mitochondria weergegeven. Van de features blijven tussen de 200 en 2500 over. Van de mitochodria blijft onder de 5% over, daarboven is de cel waarschijnlijk van slechte kwaliteit of is deze stervende.
 
 ```{r QC and selecting cells, results='hide', message=FALSE, warning=FALSE, fig.cap=""}
-pbmc.data <- Read10X(data.dir = "~/data_integration/raw_data/pbmc3k_filtered_gene_bc_matrices.tar/hg19/")
+pbmc.data <- Read10X(data.dir =here("raw_data/pbmc3k_filtered_gene_bc_matrices.tar/hg19/"))
 pbmc <- CreateSeuratObject(counts = pbmc.data, project = "pbmc3k", min.cells = 3, min.features = 200)
 pbmc
 
