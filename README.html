@@ -357,9 +357,43 @@ display: none;
 <p>Data integration of scRNA-seq data of mouse embryo cells</p>
 <p>Dit project valt onder de voorwaarden van de MIT-licentie.</p>
 <hr />
-<p>‘fs::dir_tree(here::here(“data_integration”))’</p>
+<div id="project-structuur" class="section level2">
+<h2>Project structuur</h2>
+<pre class="ruby"><code>install.packages(&quot;fs&quot;)
+fs::dir_tree(path = &quot;.&quot;, recurse = 1)</code></pre>
+<pre><code>data_integration
+├── LICENSE
+├── README.html
+├── README.md
+├── analyse
+├── bewerkte_data
+├── data_integration.Rproj
+├── raw_data
+│   ├── e65_count_matrix.csv
+│   ├── e65_count_matrix.csv.gz
+│   ├── e65_feature_metadata.csv
+│   ├── e65_feature_metadata.csv.gz
+│   ├── e65_sample_metadata.csv
+│   ├── e75_count_matrix.csv.gz
+│   ├── e75_feature_metadata.csv.gz
+│   ├── e75_sample_metadata.csv
+│   ├── e85_count_matrix.csv.gz
+│   ├── e85_count_matrix.mtx.gz
+│   ├── e85_feature_metadata.csv.gz
+│   ├── e85_sample_metadata.csv
+│   ├── e95_count_matrix.csv.gz
+│   ├── e95_feature_metadata.csv.gz
+│   ├── e95_sample_metadata.csv
+│   └── pbmc3k_filtered_gene_bc_matrices.tar
+└── scripts
+    ├── 01_Seurat_tutorial.Rmd
+    ├── 01_Seurat_tutorial.pdf
+    ├── 02_seurat_data_integration_tutorial.Rmd
+    └── 02_seurat_data_integration_tutorial.pdf</code></pre>
 <hr />
-<p>Setup</p>
+</div>
+<div id="setup" class="section level2">
+<h2>Setup</h2>
 <p>De volgende packages zijn gedurende het project gebruikt:</p>
 <ul>
 <li>dplyr</li>
@@ -367,7 +401,11 @@ display: none;
 <li>patchwork</li>
 <li>here</li>
 <li>SeuratData</li>
+<li>ggplot2</li>
+<li>cowplot</li>
 </ul>
+<hr />
+</div>
 </div>
 
 
