@@ -9,6 +9,8 @@ date: "`r Sys.Date()`"
 pdflatex: null
 ---
 
+De seurat tutorial genaamd “Introduction to scRNA-seq integration” is uitgevoerd in deze RMarkDown. De dataset die in deze tutorial is gebruikt bestaat uit twee verschillende condities van humane PBMC’s, interferon-gestimuleerde PBMC’s en controle cellen. Het doel van deze tutorial is om de twee datasets samen te voegen om gezamenlijke cel subpopulaties binnen de datasets te kunnen identificeren. Vervolgens kan er onderzocht worden hoe de groepen verschillen tussen de condities.
+
 ```{r setup, include=FALSE}
 library(Seurat)
 library(SeuratData)
@@ -25,7 +27,8 @@ ifnb[["RNA"]] <- split(ifnb[["RNA"]], f = ifnb$stim)
 ifnb
 ```
 
-# Perform analysis without integration
+# Analyse zonder data integratie
+De dataset wordt eerst zonder integratie geanalyseerd. De resultaten laten clusters zien die bepaald worden door zowel celtype als stimulatie conditie. Dit levert problemen op tijdens verdere analyse.
 
 ```{r zonder integratie, include=FALSE}
 # run standard anlaysis workflow
@@ -37,12 +40,13 @@ ifnb <- FindNeighbors(ifnb, dims = 1:30, reduction = "pca")
 ifnb <- FindClusters(ifnb, resolution = 2, cluster.name = "unintegrated_clusters")
 ```
 
-```{r DimPlot, results='hide', message=FALSE, warning=FALSE, fig.cap=""}
+```{r DimPlot, echo=FALSE, results='hide', message=FALSE, warning=FALSE, fig.cap="Stim: Elke cel wordt weergegeven als een stipje. Controle is rood en gestimuleerde cellen zijn blauw. Seurat_clusters: Elke cel wordt weergegeven als een stipje. Er zijn 25 clusters weergegeven met elk een eigen kleur."}
 ifnb <- RunUMAP(ifnb, dims = 1:30, reduction = "pca", reduction.name = "umap.unintegrated")
 DimPlot(ifnb, reduction = "umap.unintegrated", group.by = c("stim", "seurat_clusters"))
 ```
 
-# Perform integration
+# Integratie uitvoeren
+Nu worden beide condities samengevoegd waarbij cellen met hetzelfde celtype/subpopulatie gaan clusteren.
 
 ```{r , include=FALSE}
 ifnb <- IntegrateLayers(object = ifnb, method = CCAIntegration, orig.reduction = "pca", new.reduction = "integrated.cca",
@@ -56,16 +60,17 @@ ifnb <- FindClusters(ifnb, resolution = 1)
 ifnb <- RunUMAP(ifnb, dims = 1:30, reduction = "integrated.cca")
 ```
 
-```{r Dimplot, results='hide', message=FALSE, warning=FALSE, fig.cap=""}
+```{r Dimplot, echo=FALSE, results='hide', message=FALSE, warning=FALSE, fig.cap="Stim: Elke cel wordt weergegeven als een stipje. Controle is rood en gestimuleerde cellen zijn blauw. Seurat_annotations: Elke cel wordt weergegeven als een stipje. Er zijn 13 clusters weergegeven met elk een eigen kleuren celtype."}
 # Visualization
 DimPlot(ifnb, reduction = "umap", group.by = c("stim", "seurat_annotations"))
 ```
 
-```{r dimplot, results='hide', message=FALSE, warning=FALSE, fig.cap=""}
+```{r dimplot, echo=FALSE, results='hide', message=FALSE, warning=FALSE, fig.cap="CTRLSTIM: Controle en gestimuleerde cellen worden naast elkaar weergegeven. Elke cel wordt weergegeven als een stipje. Er zijn 16 clusters weergegeven met elk een eigen kleur."}
 DimPlot(ifnb, reduction = "umap", split.by = "stim")
 ```
 
-# Identify conserved cell type markers
+# Identificeer geconserveerde celtypemarkers
+Er zijn een aantal celtypemarkers die gebruikt worden om de celtypes te kunnen onderscheiden. De celtypemarkers die in beide groepen aanwezig zijn worden gezocht. Vervolgens worden deze celtypemarkers gebruikt om de verschillende celtypen aan te wijzen binnen de clusters.
 
 ```{r , include=FALSE}
 Idents(ifnb) <- "seurat_annotations"
@@ -73,7 +78,7 @@ nk.markers <- FindConservedMarkers(ifnb, ident.1 = "NK", grouping.var = "stim", 
 head(nk.markers)
 ```
 
-```{r dimplot3, results='hide', message=FALSE, warning=FALSE, fig.cap=""}
+```{r dimplot3, echo=FALSE, results='hide', message=FALSE, warning=FALSE, fig.cap="DotPlot: Op de x-as zijn de verschillende features weergegeven. Op de y-as zijn de verschillende celtypes weergegeven, gescheiden in gestimuleerde cellen en de controle cellen. De grootte van de dots geven aan hoeveel procent expressie van de features aanwezig zijn in de celtype, waarbij grotere dots een hoger percentage betekend. Rode dots zijn van de gestimuleerde cellen en blauwe dots zijn van de controlegroep."}
 # NEEDS TO BE FIXED AND SET ORDER CORRECTLY
 Idents(ifnb) <- factor(Idents(ifnb), levels = c("pDC", "Eryth", "Mk", "DC", "CD14 Mono", "CD16 Mono",
     "B Activated", "B", "CD8 T", "NK", "T activated", "CD4 Naive T", "CD4 Memory T"))
@@ -85,9 +90,10 @@ DotPlot(ifnb, features = markers.to.plot, cols = c("blue", "red"), dot.scale = 8
     RotatedAxis()
 ```
 
-# Identify differential expressed genes across conditions
+# Identificeer differentieel tot expressie gebrachte genen in verschillende omstandigheden
+Nadat de gestimuleerde cellen en de controle cellen samengebracht zijn, kunnen er analyses uitgevoerd worden waarbij de twee met elkaar vergeleken kunnen worden. De verschillen die door de stimulatie veroorzaakt worden kunnen dan bekeken worden.
 
-```{r , include=FALSE}
+```{r , echo=FALSE, results='hide', message=FALSE, warning=FALSE, fig.cap="Scatterplots: Links is een scatterplot weergegeven van de genexpressieprofielen van de CD14 monocyten met op de x-as de controle cellen en op de y-as de gestimuleerde cellen. De genen die een sterke respons vertonen op interferonstimulatie zijn rood weergegeven en de naam is erbij gezet. Rechts geldt hetzelfde, maar dan voor de CD4 naïeve T-cellen."}
 library(ggplot2)
 library(cowplot)
 theme_set(theme_cowplot())
@@ -111,20 +117,20 @@ b.interferon.response <- FindMarkers(ifnb, ident.1 = "B_STIM", ident.2 = "B_CTRL
 head(b.interferon.response, n = 15)
 ```
 
-```{r Featureplot, results='hide', message=FALSE, warning=FALSE, fig.cap=""}
+```{r Featureplot, echo=FALSE, results='hide', message=FALSE, warning=FALSE, fig.cap=""}
 FeaturePlot(ifnb, features = c("CD3D", "GNLY", "IFI6"), split.by = "stim", max.cutoff = 3, cols = c("grey",
     "red"), reduction = "umap")
 ```
 
-```{r vioolplot, results='hide', message=FALSE, warning=FALSE, fig.cap=""}
+```{r vioolplot, echo=FALSE, results='hide', message=FALSE, warning=FALSE, fig.cap=""}
 plots <- VlnPlot(ifnb, features = c("LYZ", "ISG15", "CXCL10"), split.by = "stim", group.by = "seurat_annotations",
     pt.size = 0, combine = FALSE)
 wrap_plots(plots = plots, ncol = 1)
 ```
 
-# Perform integration with SCransform-normalized datasets
+# Integratie uitvoeren met SCTransform-genormaliseerde datasets
 
-```{r dimplot2, results='hide', message=FALSE, warning=FALSE, fig.cap=""}
+```{r dimplot2, echo=FALSE, results='hide', message=FALSE, warning=FALSE, fig.cap=""}
 ifnb <- LoadData("ifnb")
 
 # split datasets and process without integration
@@ -142,7 +148,7 @@ ifnb <- FindNeighbors(ifnb, reduction = "integrated.dr", dims = 1:30)
 ifnb <- FindClusters(ifnb, resolution = 0.6)
 ```
 
-```{r Umap, results='hide', message=FALSE, warning=FALSE, fig.cap=""}
+```{r Umap, echo=FALSE, results='hide', message=FALSE, warning=FALSE, fig.cap=""}
 ifnb <- RunUMAP(ifnb, dims = 1:30, reduction = "integrated.dr")
 DimPlot(ifnb, reduction = "umap", group.by = c("stim", "seurat_annotations"))
 ```
