@@ -352,11 +352,37 @@ display: none;
 </div>
 
 
-<div id="data_integration" class="section level1">
-<h1>Data_Integration</h1>
-<p>Data integration of scRNA-seq data of mouse embryo cells</p>
+<div id="data-science-project-data_integration" class="section level1">
+<h1>Data science project: Data_Integration</h1>
+<p>Een data science project voor de analyse van data integratie van
+scRNA-seq data van muizen embryo cellen.</p>
 <p>Dit project valt onder de voorwaarden van de MIT-licentie.</p>
 <hr />
+<div id="beschrijving" class="section level2">
+<h2>Beschrijving</h2>
+<p>Het doel van dit project is om een pipeline te schrijven voor het
+analyseren van VASA-seqencing data met data integratie. Om de data
+integratie uit tekunnen voeren wordt er gebruik gemaakt van de package
+Seurat binnen Rstudio. In deze githup repository zullen alle scripts en
+data worden opgeslagen. Niet alle data wordt op deze githup opgeslagen
+in verband met de grootte van deze bestanden, in de .gitignore file zijn
+de mappen te vinden die niet op github worden opgeslagen.</p>
+<hr />
+</div>
+<div id="workflow" class="section level2">
+<h2>Workflow</h2>
+<p>Deelvraag 1: Hoe werkt Seurat?</p>
+<p>Deelvraag 2: Hoe moet de dataset geinspecteerd worden?</p>
+<p>Deelvraag 3: Hoe moet de dataset opgeschoond worden?</p>
+<p>Deelvraag 4: Hoe moet de dataset genormaliseerd worden?</p>
+<p>Deelvraag 5: Hoe moet de kwaliteitscontrole worden uitgevoerd op de
+dataset?</p>
+<p>Deelvraag 6: Hoe werkt data integratie binnen Seurat?</p>
+<p>Hoofdvraag: Kan met behulp van Seurat uitgezocht worden waar alle
+clusters uit zijn ontstaan binnen de single cell sequences van
+muizenembryo’s?</p>
+<hr />
+</div>
 <div id="project-structuur" class="section level2">
 <h2>Project structuur</h2>
 <pre class="ruby"><code>install.packages(&quot;fs&quot;)
@@ -405,6 +431,19 @@ fs::dir_tree(path = &quot;.&quot;, recurse = 1)</code></pre>
 <li>cowplot</li>
 </ul>
 <hr />
+</div>
+<div id="originele-data" class="section level2">
+<h2>Originele data</h2>
+<p>De originele data komt uit het artikel: High-throughput total RNA
+sequencing in single cells using VASA-seq.</p>
+<p>doi: <a href="https://doi.org/10.1038/s41587-022-01361-8" class="uri">https://doi.org/10.1038/s41587-022-01361-8</a></p>
+<hr />
+</div>
+<div id="contactgegevens" class="section level2">
+<h2>Contactgegevens</h2>
+<p>Bij vragen en opmerkingen kunt u terecht bij:</p>
+<p>Naam: Petra Molenaar</p>
+<p>e-mail: <a href="mailto:petra.molenaar@student.hu.nl" class="email">petra.molenaar@student.hu.nl</a></p>
 </div>
 </div>
 
