@@ -9,9 +9,9 @@ date: "`r Sys.Date()`"
 pdflatex: null
 ---
 
-De dataset die gebruikt wordt voor deze tutorial bestaat uit 2.700 single cells (PBMC's, peripheral blood mononluclear cells) die zijn gesequenced in de Illumina Nextseq 500. De dataset is van 10X Genomics, en de ruwe data kan gevonden worden op deze site: https://cf.10xgenomics.com/samples/cell/pbmc3k/pbmc3k_filtered_gene_bc_matrices.tar.gz.
+De tutorial die is gevolgd is te vinden op de volgende site:  https://satijalab.org/seurat/articles/pbmc3k_tutorial. De dataset die gebruikt wordt voor deze tutorial bestaat uit 2.700 single cells (PBMC's, peripheral blood mononuclear cells) die zijn gesequenced in de Illumina Nextseq 500. De dataset is van 10X Genomics, en de ruwe data kan gevonden worden op deze site: https://cf.10xgenomics.com/samples/cell/pbmc3k/pbmc3k_filtered_gene_bc_matrices.tar.gz.
 
-```{r setup, include=FALSE}
+```{r Setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE)
 library(dplyr)
 library(Seurat)
@@ -23,9 +23,9 @@ if (!tinytex::is_tinytex()){
 ```
 
 ## QC en selecteren van de cellen
-In de vioolplot worden de features, counts en percentage mitochondria weergegeven. Van de features blijven tussen de 200 en 2500 over. Van de mitochodria blijft onder de 5% over, daarboven is de cel waarschijnlijk van slechte kwaliteit of is deze stervende.
+In Figure 1 worden de features, counts en percentage mitochondria weergegeven. Van de features blijven tussen de 200 en 2500 over. Van de mitochodria blijft onder de 5% over, daarboven is de cel waarschijnlijk van slechte kwaliteit of is deze stervende.
 
-```{r QC and selecting cells, results='hide', message=FALSE, warning=FALSE, fig.cap=""}
+```{r QC and selecting cells vioolplot, results='hide', message=FALSE, warning=FALSE, fig.cap="Vioolplots: Er zijn drie vioolplots naast elkaar weergegeven. In alle drie de vioolplots wordt op de x-as de dataset met pbmc's weergegeven. Elke stipje is een cel. Links wordt op de y-as het aantal unieke features weergegeven. In het midden wordt op de y-as het aantal RNA binnen de cel weergegeven. Rechts wordt op de y-as het percentage mitochondriale genen weergegeven."}
 pbmc.data <- Read10X(data.dir =here("raw_data/pbmc3k_filtered_gene_bc_matrices.tar/hg19/"))
 pbmc <- CreateSeuratObject(counts = pbmc.data, project = "pbmc3k", min.cells = 3, min.features = 200)
 pbmc
@@ -47,7 +47,7 @@ head(pbmc@meta.data, 5)
 VlnPlot(pbmc, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
 ```
 
-```{r results='hide', message=FALSE, warning=FALSE, fig.cap=""}
+```{r QC and selecting cells FeatureScatterplot, results='hide', message=FALSE, warning=FALSE, fig.cap="FeatureScatterplots: Er zijn twee scatterplots naast elkaar weergegeven, bij beide scatterplots staat op de x-as het aantal RNA binnen de cel. Elk stipje is een cel. Links is op de y-as het percentage mitochondriale genen weergegeven, waarbij alleen cellen meegenomen zijn die een percentage lager dan 5% mitochondriale genen hebben. Rechts is op de y-as het aantal unieke features per cel weergegeven, waarbij alleen de cellen meegenomen zijn die tussen de 200 en 2500 unieke features hebben."}
 plot1 <- FeatureScatter(pbmc, feature1 = "nCount_RNA", feature2 = "percent.mt")
 plot2 <- FeatureScatter(pbmc, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
 plot1 + plot2
@@ -63,9 +63,9 @@ pbmc <- NormalizeData(pbmc, normalization.method = "LogNormalize", scale.factor 
 ```
 
 ## Kenmerkselectie
-De 10 meest variërende genen worden in onderstaand figuur aangegeven met hun naam.
+In Figure 3 zijn de 2000 cellen met de meest variërende kenmerken zijn rood gekleurd en de 10 meest variërende genen worden in onderstaand figuur aangegeven met hun naam.
 
-```{r Kenmerkselectie, results='hide', message=FALSE, warning=FALSE, fig.cap=""}
+```{r Kenmerkselectie, results='hide', message=FALSE, warning=FALSE, fig.cap="VariableFeaturePlot: Op de x-as wordt de gemiddelde expressie weergegeven. Op de y-as wordt de standaard variantie weergegeven. De 2000 cellen met de meest variërende kenmerken zijn rood gekleurd en de 10 cellen met de meest variërende genen zijn aangegeven met hun naam."}
 pbmc <- FindVariableFeatures(pbmc, selection.method = "vst", nfeatures = 2000)
 
 top10 <- head(VariableFeatures(pbmc), 10)
@@ -78,36 +78,37 @@ plot2
 ## De gegevens schalen
 De gemiddelde expressie over de cellen wordt op 0 gesteld, ook wordt de variantie over de cellen op 1 gesteld.
 
-```{r de gegevens schalen, include=FALSE}
+```{r De gegevens schalen, include=FALSE}
 all.genes <- rownames(pbmc)
 pbmc <- ScaleData(pbmc, features = all.genes)
 ```
 
 ## Lineaire dimensionale reductie uitvoeren
-Met behulp van principal component analyses (PCA) worden er van de oude variabelen, nieuwe variabelen gemaakt door lineaire combinaties te maken. Hieruit ontstaan enkele hoofdcomponenten (PC's). PC1 dekt het grootste deel van de variatie binnen de data. PC2 dekt daarna het grootste deel, en zo voort. 
+Met behulp van principal component analyses (PCA) worden er van de oude variabelen, nieuwe variabelen gemaakt door lineaire combinaties te maken. Hieruit ontstaan enkele hoofdcomponenten (PC's). PC1 dekt het grootste deel van de variatie binnen de data. PC2 dekt daarna het grootste deel, enzovoort. 
 
-```{r Lineaire dimensionale reductie uitvoeren, results='hide', message=FALSE, warning=FALSE, fig.cap="VizDimLoadings. De topgenen worden weergegeven die geassiocieerd worden met PC1 of PC2."}
+```{r Lineaire dimensionale reductie uitvoeren vizdimloadings, results='hide', message=FALSE, warning=FALSE, fig.cap="VizDimLoadings. De topgenen worden weergegeven die geassiocieerd worden met PC1 of PC2."}
 pbmc <- RunPCA(pbmc, features = VariableFeatures(object = pbmc))
 print(pbmc[["pca"]], dims = 1:5, nfeatures = 5)
 VizDimLoadings(pbmc, dims = 1:2, reduction = "pca")
 ```
 
-```{r results='hide', message=FALSE, warning=FALSE, fig.cap="DimPlot, Op de x-as wordt PC1 geplot en op de y-as wordt PC2 geplot. Elke stip representeert een cel."}
+```{r Lineaire dimensionale reductie uitvoeren dimplot, results='hide', message=FALSE, warning=FALSE, fig.cap="DimPlot, Op de x-as wordt PC1 geplot en op de y-as wordt PC2 geplot. Elke stip representeert een cel."}
 DimPlot(pbmc, reduction = "pca") + NoLegend()
 ```
 
-```{r results='hide', message=FALSE, warning=FALSE, fig.cap="DimHeatmap, PC1 wordt weergegeven met als de verschillende genen in de rijen, en verschillende cellen in de kolommen. Paars is een lage PCA-score, geel is een hoge PCA-score. Clusters worden hiermee gevisualiseerd"}
+```{r Lineaire dimensionale reductie uitvoeren dimheatmap, results='hide', message=FALSE, warning=FALSE, fig.cap="DimHeatmap, PC1 wordt weergegeven met als de verschillende genen in de rijen, en verschillende cellen in de kolommen. Paars is een lage PCA-score, geel is een hoge PCA-score. Clusters worden hiermee gevisualiseerd"}
 DimHeatmap(pbmc, dims = 1, cells = 500, balanced = TRUE)
 ```
 
 ## Dimensionaliteit
+Om ruis te voorkomen in verdere analyse wordt er gekeken hoeveel PC's meegenomen moeten worden. Hiervoor kan er gebruik gemaakt worden van een elbowplot. In deze plot worden de PC's op de x-as geplaatst en de standaard deviatie op de y-as. Er ontstaat een soort van arm, waarbij de elleboog het keerpunt is. De PC's voor de elleboog worden meegenomen en de PC's na de elleboog worden niet meegenomen. Het verschil tussen de PC's na de elleboog is niet relevant genoeg om mee te nemen. In Figure 7 is de elleboog zichtbaar tussen 9 en 10.
 
-
-```{r Dimensionaliteit, fig.cap="ElbowPlot"}
+```{r Dimensionaliteit elbowplot, fig.cap="ElbowPlot: Op de x-as staan de PC's en op de y-as staan de standaard deviatie."}
 ElbowPlot(pbmc)
 ```
 
 ## Clusteren
+
 
 ```{r Clusteren, include=FALSE}
 pbmc <- FindNeighbors(pbmc, dims = 1:10)
@@ -124,7 +125,7 @@ DimPlot(pbmc, reduction = "umap")
 
 ## Het vinden van differentieel tot expressie gebrachte kenmerken (clusterbiomarkers)
 
-```{r Clusterbiomarkers, results='hide', message=FALSE, warning=FALSE, fig.cap="ViolinPlot: Het expressielevel van het gen MS4A1 wordt per cluster weergegeven. In cluster 3 komt dit gen het meest tot expressie."}
+```{r Clusterbiomarkers vioolplot, results='hide', message=FALSE, warning=FALSE, fig.cap="ViolinPlot: Het expressielevel van het gen MS4A1 wordt per cluster weergegeven. In cluster 3 komt dit gen het meest tot expressie."}
 cluster2.markers <- FindMarkers(pbmc, ident.1 = 2)
 head(cluster2.markers, n = 5)
 cluster5.markers <- FindMarkers(pbmc, ident.1 = 5, ident.2 = c(0, 3))
@@ -137,7 +138,7 @@ cluster0.markers <- FindMarkers(pbmc, ident.1 = 0, logfc.threshold = 0.25, test.
 VlnPlot(pbmc, features = c("MS4A1"))
 ```
 
-```{r results='hide', message=FALSE, warning=FALSE, fig.cap="FeaturePlot, MS4A1"}
+```{r Clusterbiomarkers featureplot, results='hide', message=FALSE, warning=FALSE, fig.cap="FeaturePlot, MS4A1"}
 FeaturePlot(pbmc, features = c("MS4A1"))
 pbmc.markers %>%
     group_by(cluster) %>%
@@ -146,7 +147,7 @@ pbmc.markers %>%
     ungroup() -> top10
 ```
 
-```{r results='hide', message=FALSE, warning=FALSE, fig.cap="DoHeatMap"}
+```{r Clusterbiomarkers doheatmap, results='hide', message=FALSE, warning=FALSE, fig.cap="DoHeatMap"}
 DoHeatmap(pbmc, features = top10$gene) + NoLegend()
 ```
 
