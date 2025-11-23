@@ -108,7 +108,7 @@ ElbowPlot(pbmc)
 ```
 
 ## Clusteren
-
+Nadat de juiste PC’s zijn gekozen (1-10), verdeelt Seurat de cellen in groepen (clusters). Het programma kijkt hiervoor welke cellen het meest op elkaar lijken en verbindt die in een netwerk. Vervolgens zoekt het naar dicht bij elkaar liggende groepjes cellen binnen dat netwerk. Met de resolutie-instelling kun je bepalen of je grotere, bredere groepen of juist kleinere, gedetailleerdere groepen krijgt. In dit geval is er gekozen voor een resolutie van 0.5.
 
 ```{r Clusteren, include=FALSE}
 pbmc <- FindNeighbors(pbmc, dims = 1:10)
@@ -117,13 +117,15 @@ head(Idents(pbmc), 5)
 ```
 
 ## Niet-lineaire dimensionale reductie uitvoeren (UMAP/tSNE)
+Seurat kan technieken zoals UMAP en tSNE gebruiken om de data overzichtelijk weer te geven in twee dimensies. Deze methoden plaatsen cellen die op elkaar lijken dicht bij elkaar, zodat de eerder gevonden clusters ook zichtbaar worden in de plot. Het is een handig hulpmiddel om patronen in de data te verkennen. Het blijft echter een visualisatie: lokale relaties (cellen die erg op elkaar lijken) worden goed weergegeven, maar de grotere, globale structuur is minder betrouwbaar. Gebruik UMAP of tSNE daarom vooral om een indruk van de data te krijgen, maar niet om er alleen op basis van de plot biologische conclusies te trekken.
 
-```{r Niet-lineaire dimensionale reductie uitvoeren, results='hide', message=FALSE, warning=FALSE, fig.cap="DimPlot: Op de x-as wordt umap_1 geplot en op de y-as wordt umap_2 geplot. Elke stip representeert een cel. De kleur geeft aan bij welk cluster deze cel hoort."}
+```{r Niet-lineaire dimensionale reductie uitvoeren umap, results='hide', message=FALSE, warning=FALSE, fig.cap="DimPlot: Op de x-as wordt umap_1 geplot en op de y-as wordt umap_2 geplot. Elke stip representeert een cel. De kleur geeft aan bij welk cluster deze cel hoort."}
 pbmc <- RunUMAP(pbmc, dims = 1:10)
 DimPlot(pbmc, reduction = "umap")
 ```
 
 ## Het vinden van differentieel tot expressie gebrachte kenmerken (clusterbiomarkers)
+Vervolgens kunnen er voor elke cluster genen gezocht worden die duidelijk meer (of minder) tot expressie komen dan in andere cellen. Dit helpt om te bepalen welke genen een cluster kenmerken.
 
 ```{r Clusterbiomarkers vioolplot, results='hide', message=FALSE, warning=FALSE, fig.cap="ViolinPlot: Het expressielevel van het gen MS4A1 wordt per cluster weergegeven. In cluster 3 komt dit gen het meest tot expressie."}
 cluster2.markers <- FindMarkers(pbmc, ident.1 = 2)
@@ -138,7 +140,7 @@ cluster0.markers <- FindMarkers(pbmc, ident.1 = 0, logfc.threshold = 0.25, test.
 VlnPlot(pbmc, features = c("MS4A1"))
 ```
 
-```{r Clusterbiomarkers featureplot, results='hide', message=FALSE, warning=FALSE, fig.cap="FeaturePlot, MS4A1"}
+```{r Clusterbiomarkers featureplot, results='hide', message=FALSE, warning=FALSE, fig.cap="FeaturePlot:Op de x-as staat umap_1 en op de y-as staat umap_2. De expressie van MS4A1 wordt aangegeven in het paars."}
 FeaturePlot(pbmc, features = c("MS4A1"))
 pbmc.markers %>%
     group_by(cluster) %>%
@@ -147,13 +149,14 @@ pbmc.markers %>%
     ungroup() -> top10
 ```
 
-```{r Clusterbiomarkers doheatmap, results='hide', message=FALSE, warning=FALSE, fig.cap="DoHeatMap"}
+```{r Clusterbiomarkers doheatmap, results='hide', message=FALSE, warning=FALSE, fig.cap="DoHeatMap: Op de x-as worden de clusters weergegeven en op de y-as worden de verschillende markers weergegeven. De 10 belangrijkste markers worden per cluster weergegeven. De gele kleur geeft een hoge expressie van het gen aan en de paarse kleur een lage expressie."}
 DoHeatmap(pbmc, features = top10$gene) + NoLegend()
 ```
 
 ## Toewijzen van celtype-identiteit aan clusters
+Als laatste stap worden er bekende celtypen gekoppeld aan de clusters.
 
-```{r Toewijzen van celtype-identiteit aan clusters, results='hide', message=FALSE, warning=FALSE, fig.cap="DimPlot"}
+```{r Toewijzen van celtype-identiteit aan clusters, results='hide', message=FALSE, warning=FALSE, fig.cap="DimPlot: Op de x-as staat umap_1 en op de y-as staat umap_2. De clusters zijn aangegeven met verschillende kleuren en in de clusters staan de celtype namen van de desbetreffende cluster."}
 new.cluster.ids <- c("Naive CD4 T", "CD14+ Mono", "Memory CD4 T", "B", "CD8 T", "FCGR3A+ Mono",
     "NK", "DC", "Platelet")
 names(new.cluster.ids) <- levels(pbmc)
