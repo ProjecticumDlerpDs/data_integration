@@ -8,7 +8,7 @@ Dit project valt onder de voorwaarden van de MIT-licentie.
 
 ## Beschrijving
 
-Het doel van dit project is om een pipeline te schrijven voor het analyseren van VASA-seqencing data met data integratie. Om de data integratie uit tekunnen voeren wordt er gebruik gemaakt van de package Seurat binnen Rstudio. In deze githup repository zullen alle scripts en data worden opgeslagen. Niet alle data wordt op deze githup opgeslagen in verband met de grootte van deze bestanden, in de .gitignore file zijn de mappen te vinden die niet op github worden opgeslagen. 
+Het doel van dit project is om een pipeline te schrijven voor het analyseren van VASA-seqencing data met data integratie. Om de data integratie uit te kunnen voeren wordt er gebruik gemaakt van de package Seurat binnen Rstudio. In deze githup repository zullen alle scripts en data worden opgeslagen. Niet alle data wordt op deze githup opgeslagen in verband met de grootte van deze bestanden, in de .gitignore file zijn de mappen te vinden die niet op github worden opgeslagen. 
 
 ---
 
