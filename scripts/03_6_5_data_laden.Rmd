@@ -1,0 +1,82 @@
+---
+title: "03_6_5_data_laden"
+date: "2025-11-27"
+output:
+  pdf_document:
+    latex_engine: xelatex
+header-includes:
+  - \usepackage{placeins}
+  - \usepackage{float}
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+if (!tinytex::is_tinytex()) {
+  tinytex::install_tinytex()
+}
+```
+
+```{r loading the library, include=FALSE, echo=FALSE}
+#laad de volgende pakketen in. 
+library(dplyr)
+library(Seurat)
+library(patchwork)
+library(data.table)
+library(ggplot2)
+```
+
+```{R inladen van de data, include=FALSE, echo=FALSE, warning=FALSE, message=FALSE}
+# eerst wordt er een pad gemaakt waar de data opgeslagen is op de server.
+datadir <- "/home/data/projecticum/splicing/data/"
+
+# object maken van de verschillende type bestanden.
+expression_matrix <- ReadMtx(
+  feature.column = 1,
+  skip.cell = 1,
+  skip.feature = 1,
+  feature.sep = ",",
+  cell.sep = ",",
+  mtx = file.path(datadir, "e85_count_matrix.mtx.gz"),
+  features = file.path(datadir, "e85_feature_metadata.csv.gz"),
+  cells = file.path(datadir, "e85_sample_metadata.csv"), 
+)
+e85_seuratobject <- CreateSeuratObject(counts = expression_matrix,
+                                       project = "mouse_embryo",
+                                       min.cells = 3,
+                                       min.features = 200)
+```
+
+```{r pre-procesing, eval=TRUE, include=FALSE, echo=FALSE, warning=FALSE, message=FALSE}
+# Er wordt een extra colom gemaakt om te kijken naar het percentage mitochondriaal RNA (mRNA). 
+e85_seuratobject[["percent.mt"]] <- PercentageFeatureSet(e85_seuratobject, pattern = "^mt-")
+```
+
+```{r visualiseren ruwe data, eval=TRUE, echo=FALSE, warning=FALSE, message=FALSE, fig.cap="QC ruwe data visualisatie in vioplot van nFeature\\_RNA, nCount\\_RNA en percent.mt", fig.align='center', fig.pos='H'}
+# visualiseren van de data door middel van een VlnPlot. 
+vlnfeature <- VlnPlot(e85_seuratobject, 
+        features = "nFeature_RNA") +
+  theme(axis.text.x = element_blank()) + 
+  NoLegend() + 
+  xlab("E8.5") + 
+  ylab("aantal features per cel")
+
+# visualiseren van de data door middel van een VlnPlot. 
+vlncount <- VlnPlot(e85_seuratobject, 
+        features = "nCount_RNA") +
+  theme(axis.text.x = element_blank()) + 
+  NoLegend() + 
+  xlab("E8.5") + 
+  ylab("aantal RNA moleculen per cel")
+
+
+# visualiseren van de data door middel van een VlnPlot. 
+vlnmt <- VlnPlot(e85_seuratobject, 
+        features = "percent.mt") +
+  theme(axis.text.x = element_blank()) + 
+  NoLegend() + 
+  xlab("E8.5") + 
+  ylab("percentage mitochondriaal RNA")
+ 
+ 
+vlnfeature | vlncount | vlnmt
+```
