@@ -66,7 +66,14 @@ data_integration
     ├── 01_Seurat_tutorial.Rmd
     ├── 01_Seurat_tutorial.pdf
     ├── 02_seurat_data_integration_tutorial.Rmd
-    └── 02_seurat_data_integration_tutorial.pdf
+    ├── 02_seurat_data_integration_tutorial.pdf
+    ├── 03_06_5_data_omzetten_van_csv_naar_mtx.R
+    ├── 03_6_5_data_laden.Rmd
+    ├── 03_6_5_data_laden.pdf
+    ├── 04_07_5_data_omzetten_van_csv_naar_mtx.R
+    ├── 05_08_5_data_omzetten_van_csv_naar_mtx.R
+    ├── 06_09_5_data_omzetten_van_csv_naar_mtx.R
+    └── 07_data_omzetten_van_csv_naar_mtx.R
 ```
 
 ---
@@ -82,6 +89,7 @@ De volgende packages zijn gedurende het project gebruikt:
 - SeuratData
 - ggplot2
 - cowplot
+- Matrix
 
 ---
 
