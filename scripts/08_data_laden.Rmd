@@ -80,3 +80,8 @@ vlnmt <- VlnPlot(e85_seuratobject,
  
 vlnfeature | vlncount | vlnmt
 ```
+
+library(Matrix)
+
+# Laad CSV (alleen de eerste 10 rijen voor voorbeeld)
+counts <- read.csv("~/data_integration/raw_data/e85_count_matrix.csv.gz", row.names = 1)
