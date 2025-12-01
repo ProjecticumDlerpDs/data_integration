@@ -16,7 +16,7 @@ Het doel van dit project is om een pipeline te schrijven voor het analyseren van
 
 Deelvraag 1: Hoe werkt Seurat?
 
-Deelvraag 2: Hoe moet de dataset geinspecteerd worden?
+Deelvraag 2: Hoe moet de dataset geïnspecteerd worden?
 
 Deelvraag 3: Hoe moet de dataset opgeschoond worden?
 
@@ -24,7 +24,11 @@ Deelvraag 4: Hoe moet de dataset genormaliseerd worden?
 
 Deelvraag 5: Hoe moet de kwaliteitscontrole worden uitgevoerd op de dataset?
 
-Deelvraag 6: Hoe werkt data integratie binnen Seurat?
+Deelvraag 6: Hoe voeg ik mijn data samen?
+
+Deelvraag 7: Hoe werkt het monocle 3 programma?
+
+Deelvraag 8: Hoe sluit de data van Seurat aan op monocle 3?
 
 Hoofdvraag: Kan met behulp van Seurat uitgezocht worden waar alle clusters uit zijn ontstaan binnen de single cell sequences van muizenembryo's?
 
