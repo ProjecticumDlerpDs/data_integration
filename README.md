@@ -15,20 +15,24 @@ Het doel van dit project is om een pipeline te schrijven voor het analyseren van
 ## Workflow
 
 Deelvraag 1: Hoe werkt Seurat?
+Bestanden: 01_seurat_tutorial.Rmd, 01_seurat_tutorial.pdf
 
-Deelvraag 2: Hoe moet de dataset geïnspecteerd worden?
+Deelvraag 2: Hoe moeten de csv-bestanden omgezet worden in mtx-bestanden?
+Bestanden: 03_06_5_data_omzetten_van_csv_naar_mtx.R, 04_07_5_data_omzetten_van_csv_naar_mtx.R, 05_08_5_data_omzetten_van_csv_naar_mtx.R, 06_09_5_data_omzetten_van_csv_naar_mtx.R, 07_data_omzetten_van_csv_naar_mtx.R
 
-Deelvraag 3: Hoe moet de dataset opgeschoond worden?
+Deelvraag 3: Hoe moet de dataset geïnspecteerd worden?
 
-Deelvraag 4: Hoe moet de dataset genormaliseerd worden?
+Deelvraag 4: Hoe moet de dataset opgeschoond worden?
 
-Deelvraag 5: Hoe moet de kwaliteitscontrole worden uitgevoerd op de dataset?
+Deelvraag 5: Hoe moet de dataset genormaliseerd worden?
 
-Deelvraag 6: Hoe voeg ik mijn data samen?
+Deelvraag 6: Hoe moet de kwaliteitscontrole worden uitgevoerd op de dataset?
 
-Deelvraag 7: Hoe werkt het monocle 3 programma?
+Deelvraag 7: Hoe voeg ik mijn data samen?
 
-Deelvraag 8: Hoe sluit de data van Seurat aan op monocle 3?
+Deelvraag 8: Hoe werkt het monocle 3 programma?
+
+Deelvraag 9: Hoe sluit de data van Seurat aan op monocle 3?
 
 Hoofdvraag: Kan met behulp van Seurat uitgezocht worden waar alle clusters uit zijn ontstaan binnen de single cell sequences van muizenembryo's?
 
