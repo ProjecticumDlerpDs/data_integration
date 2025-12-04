@@ -81,7 +81,48 @@ vlnmt <- VlnPlot(e85_seuratobject,
 vlnfeature | vlncount | vlnmt
 ```
 
-library(Matrix)
 
-# Laad CSV (alleen de eerste 10 rijen voor voorbeeld)
-counts <- read.csv("~/data_integration/raw_data/e85_count_matrix.csv.gz", row.names = 1)
+## QC en selecteren van de cellen
+
+```{r QC and selecting cells, include=FALSE}
+library(Seurat)
+
+e65.data <- ReadMtx (mtx = "~/data_integration/bewerkte_data/e65_count_matrix.mtx.gz", features =  "/home/data/projecticum/splicing/data/e65_feature_metadata.csv.gz",
+  cells = "/home/data/projecticum/splicing/data/e65_sample_metadata.csv", feature.column = 1, skip.cell = 1, skip.feature = 1)
+
+e65 <- CreateSeuratObject(counts = e65.data, project = "muizen embryo's", min.cells = 3, min.features = 200)
+
+e65[["percent.mt"]] <- PercentageFeatureSet(e65, pattern = "^MT-")
+
+VlnPlot(e65, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+
+grep("^MT-", rownames(e65), value = TRUE)
+grep("^mt-", rownames(e65), value = TRUE)
+grep("mt", rownames(e65), value = TRUE)[1:20]
+
+feat <- read.csv("/home/data/projecticum/splicing/data/e65_feature_metadata.csv.gz", header = TRUE)
+head(feat)
+colnames(feat)
+
+table(feat$feature_type)
+table(feat$feature_biotype)
+table(feat$annotations_subset)
+head(feat$feature_output, 20)
+
+system("zcat /home/data/projecticum/splicing/data/e65_feature_metadata.csv.gz | head")
+
+system("find /home/data/projecticum/splicing -name '*feature*' | grep e65")
+system("find /home/data/projecticum/splicing -name '*gene*' | grep e65")
+system("find /home/data/projecticum/splicing -name '*.tsv*' | grep e65")
+
+feat <- read.csv("/home/data/projecticum/splicing/data/e65_feature_metadata.csv.gz")
+features <- feat$feature
+
+e65.data <- ReadMtx(
+  mtx = "~/data_integration/bewerkte_data/e65_count_matrix.mtx.gz",
+  features = features,
+  cells = "/home/data/projecticum/splicing/data/e65_sample_metadata.csv"
+)
+
+
+```
