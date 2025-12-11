@@ -36,7 +36,7 @@ expression_matrix <- ReadMtx(
   skip.feature = 1,
   feature.sep = ",",
   cell.sep = ",",
-  mtx = file.path(datadir, "e85_count_matrix.mtx.gz"),
+  mtx = file.path("~/data_integration/bewerkte_data/e85_count_matrix.mtx.gz"),
   features = file.path(datadir, "e85_feature_metadata.csv.gz"),
   cells = file.path(datadir, "e85_sample_metadata.csv"), 
 )
@@ -82,47 +82,199 @@ vlnfeature | vlncount | vlnmt
 ```
 
 
-## QC en selecteren van de cellen
 
-```{r QC and selecting cells, include=FALSE}
-library(Seurat)
+```{R inladen van de data, include=FALSE, echo=FALSE, warning=FALSE, message=FALSE}
+# eerst wordt er een pad gemaakt waar de data opgeslagen is op de server.
+datadir <- "/home/data/projecticum/splicing/data/"
 
-e65.data <- ReadMtx (mtx = "~/data_integration/bewerkte_data/e65_count_matrix.mtx.gz", features =  "/home/data/projecticum/splicing/data/e65_feature_metadata.csv.gz",
-  cells = "/home/data/projecticum/splicing/data/e65_sample_metadata.csv", feature.column = 1, skip.cell = 1, skip.feature = 1)
-
-e65 <- CreateSeuratObject(counts = e65.data, project = "muizen embryo's", min.cells = 3, min.features = 200)
-
-e65[["percent.mt"]] <- PercentageFeatureSet(e65, pattern = "^MT-")
-
-VlnPlot(e65, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
-
-grep("^MT-", rownames(e65), value = TRUE)
-grep("^mt-", rownames(e65), value = TRUE)
-grep("mt", rownames(e65), value = TRUE)[1:20]
-
-feat <- read.csv("/home/data/projecticum/splicing/data/e65_feature_metadata.csv.gz", header = TRUE)
-head(feat)
-colnames(feat)
-
-table(feat$feature_type)
-table(feat$feature_biotype)
-table(feat$annotations_subset)
-head(feat$feature_output, 20)
-
-system("zcat /home/data/projecticum/splicing/data/e65_feature_metadata.csv.gz | head")
-
-system("find /home/data/projecticum/splicing -name '*feature*' | grep e65")
-system("find /home/data/projecticum/splicing -name '*gene*' | grep e65")
-system("find /home/data/projecticum/splicing -name '*.tsv*' | grep e65")
-
-feat <- read.csv("/home/data/projecticum/splicing/data/e65_feature_metadata.csv.gz")
-features <- feat$feature
-
-e65.data <- ReadMtx(
-  mtx = "~/data_integration/bewerkte_data/e65_count_matrix.mtx.gz",
-  features = features,
-  cells = "/home/data/projecticum/splicing/data/e65_sample_metadata.csv"
+# object maken van de verschillende type bestanden.
+expression_matrix <- ReadMtx(
+  feature.column = 1,
+  skip.cell = 1,
+  skip.feature = 1,
+  feature.sep = ",",
+  cell.sep = ",",
+  mtx = file.path("~/data_integration/bewerkte_data/e65_count_matrix.mtx.gz"),
+  features = file.path(datadir, "e65_feature_metadata.csv.gz"),
+  cells = file.path(datadir, "e65_sample_metadata.csv"), 
 )
+e65_seuratobject <- CreateSeuratObject(counts = expression_matrix,
+                                       project = "mouse_embryo",
+                                       min.cells = 3,
+                                       min.features = 200)
+```
+
+```{r pre-procesing, eval=TRUE, include=FALSE, echo=FALSE, warning=FALSE, message=FALSE}
+# Er wordt een extra colom gemaakt om te kijken naar het percentage mitochondriaal RNA (mRNA). 
+e65_seuratobject[["percent.mt"]] <- PercentageFeatureSet(e65_seuratobject, pattern = "^mt-")
+```
+
+```{r visualiseren ruwe data, eval=TRUE, echo=FALSE, warning=FALSE, message=FALSE, fig.cap="QC ruwe data visualisatie in vioplot van nFeature\\_RNA, nCount\\_RNA en percent.mt", fig.align='center', fig.pos='H'}
+# visualiseren van de data door middel van een VlnPlot. 
+Idents(e65_seuratobject) <- "E6.5"
+vlnfeature <- VlnPlot(e65_seuratobject, 
+        features = "nFeature_RNA") +
+  theme(axis.text.x = element_blank()) + 
+  NoLegend() + 
+  xlab("E6.5") + 
+  ylab("aantal features per cel")
+
+# visualiseren van de data door middel van een VlnPlot. 
+vlncount <- VlnPlot(e65_seuratobject, 
+        features = "nCount_RNA") +
+  theme(axis.text.x = element_blank()) + 
+  NoLegend() + 
+  xlab("E6.5") + 
+  ylab("aantal RNA moleculen per cel")
 
 
+# visualiseren van de data door middel van een VlnPlot. 
+vlnmt <- VlnPlot(e65_seuratobject, 
+        features = "percent.mt") +
+  theme(axis.text.x = element_blank()) + 
+  NoLegend() + 
+  xlab("E6.5") + 
+  ylab("percentage mitochondriaal RNA")
+ 
+ 
+vlnfeature | vlncount | vlnmt
+```
+
+```{r QC and selecting cells data inladen voor figure 2, results='hide'}
+plot1 <- FeatureScatter(e65_seuratobject, feature1 = "nCount_RNA", feature2 = "percent.mt")
+plot2 <- FeatureScatter(e65_seuratobject, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+```
+
+```{r QC and selecting cells Figure 2, fig.cap="FeatureScatterplots: Er zijn twee scatterplots naast elkaar weergegeven, bij beide scatterplots staat op de x-as het aantal RNA binnen de cel. Elk stipje is een cel. Links is op de y-as het percentage mitochondriale genen weergegeven, waarbij alleen cellen meegenomen zijn die een percentage lager dan 5% mitochondriale genen hebben. Rechts is op de y-as het aantal unieke features per cel weergegeven, waarbij alleen de cellen meegenomen zijn die tussen de 200 en 2500 unieke features hebben."}
+plot1 + plot2
+```
+
+```{r QC and selecting cells subset maken, include=FALSE}
+e65_seuratobject <- subset(e65_seuratobject, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
+```
+
+## Normaliseren van de gegevens
+De data wordt genormaliseerd door de totale expressie van elke cel om te zetten naar 10.000 en vervolgens een log-transformatie te nemen (het getal weer kleiner maken). Hierdoor kunnen de getallen per cel met elkaar vergeleken worden.
+
+```{r Normaliseren, include=FALSE}
+e65_seuratobject <- NormalizeData(e65_seuratobject, normalization.method = "LogNormalize", scale.factor = 10000)
+```
+
+## Kenmerkselectie
+In Figure 3 zijn de 2000 cellen met de meest variërende kenmerken zijn rood gekleurd en de 10 meest variërende genen worden aangegeven met hun naam.
+
+```{r Kenmerkselectie, include=FALSE}
+e65_seuratobject <- FindVariableFeatures(e65_seuratobject, selection.method = "vst", nfeatures = 2000)
+
+top10 <- head(VariableFeatures(e65_seuratobject), 10)
+
+plot1 <- VariableFeaturePlot(e65_seuratobject)
+plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+```
+
+```{r Kenmerkselectie Figure 3, fig.cap="VariableFeaturePlot: Op de x-as wordt de gemiddelde expressie weergegeven. Op de y-as wordt de standaard variantie weergegeven. De 2000 cellen met de meest variërende kenmerken zijn rood gekleurd en de 10 cellen met de meest variërende genen zijn aangegeven met hun naam."}
+plot2
+```
+
+## De gegevens schalen
+De gemiddelde expressie over de cellen wordt op 0 gesteld, ook wordt de variantie over de cellen op 1 gesteld.
+
+```{r De gegevens schalen, include=FALSE}
+all.genes <- rownames(e65_seuratobject)
+e65_seuratobject <- ScaleData(e65_seuratobject, features = all.genes)
+```
+
+## Lineaire dimensionale reductie uitvoeren
+Met behulp van principal component analyses (PCA) worden er van de oude variabelen, nieuwe variabelen gemaakt door lineaire combinaties te maken. Hieruit ontstaan enkele hoofdcomponenten (PC's). PC1 dekt het grootste deel van de variatie binnen de data. PC2 dekt daarna het grootste deel, enzovoort. 
+
+```{r Lineaire dimensionale reductie uitvoeren, include=FALSE}
+e65_seuratobject <- RunPCA(e65_seuratobject, features = VariableFeatures(object = e65_seuratobject))
+print(e65_seuratobject[["pca"]], dims = 1:5, nfeatures = 5)
+```
+
+```{r Lineaire dimensionale reductie uitvoeren Figure 4, fig.cap="VizDimLoadings. De topgenen worden weergegeven die geassiocieerd worden met PC1 of PC2."}
+VizDimLoadings(e65_seuratobject, dims = 1:2, reduction = "pca")
+```
+
+```{r Lineaire dimensionale reductie uitvoeren Figure 5, fig.cap="DimPlot, Op de x-as wordt PC1 geplot en op de y-as wordt PC2 geplot. Elke stip representeert een cel."}
+DimPlot(e65_seuratobject, reduction = "pca") + NoLegend()
+```
+
+```{r Lineaire dimensionale reductie uitvoeren Figure 6, fig.cap="DimHeatmap, PC1 wordt weergegeven met als de verschillende genen in de rijen, en verschillende cellen in de kolommen. Paars is een lage PCA-score, geel is een hoge PCA-score. Clusters worden hiermee gevisualiseerd"}
+DimHeatmap(e65_seuratobject, dims = 1, cells = 454, balanced = TRUE)
+```
+
+## Dimensionaliteit
+Om ruis te voorkomen in verdere analyse wordt er gekeken hoeveel PC's meegenomen moeten worden. Hiervoor kan er gebruik gemaakt worden van een elbowplot. In deze plot worden de PC's op de x-as geplaatst en de standaard deviatie op de y-as. Er ontstaat een soort van arm, waarbij de elleboog het keerpunt is. De PC's voor de elleboog worden meegenomen en de PC's na de elleboog worden niet meegenomen. Het verschil tussen de PC's na de elleboog is niet relevant genoeg om mee te nemen. In Figure 7 is de elleboog zichtbaar tussen 9 en 10.
+
+```{r Dimensionaliteit Figure 7, fig.cap="ElbowPlot: Op de x-as staan de PC's en op de y-as staan de standaard deviatie."}
+ElbowPlot(e65_seuratobject)
+```
+
+## Clusteren
+Nadat de juiste PC’s zijn gekozen (1-10), verdeelt Seurat de cellen in groepen (clusters). Het programma kijkt hiervoor welke cellen het meest op elkaar lijken en verbindt die in een netwerk. Vervolgens zoekt het naar dicht bij elkaar liggende groepjes cellen binnen dat netwerk. Met de resolutie-instelling kun je bepalen of je grotere, bredere groepen of juist kleinere, gedetailleerdere groepen krijgt. In dit geval is er gekozen voor een resolutie van 0.5.
+
+```{r Clusteren, include=FALSE}
+e65_seuratobject <- FindNeighbors(e65_seuratobject, dims = 1:20)
+e65_seuratobject <- FindClusters(e65_seuratobject, resolution = 0.5)
+head(Idents(e65_seuratobject), 5)
+```
+
+## Niet-lineaire dimensionale reductie uitvoeren (UMAP/tSNE)
+Seurat kan technieken zoals UMAP en tSNE gebruiken om de data overzichtelijk weer te geven in twee dimensies. Deze methoden plaatsen cellen die op elkaar lijken dicht bij elkaar, zodat de eerder gevonden clusters ook zichtbaar worden in de plot. Het is een handig hulpmiddel om patronen in de data te verkennen. Het blijft echter een visualisatie: lokale relaties (cellen die erg op elkaar lijken) worden goed weergegeven, maar de grotere, globale structuur is minder betrouwbaar. Gebruik UMAP of tSNE daarom vooral om een indruk van de data te krijgen, maar niet om er alleen op basis van de plot biologische conclusies te trekken.
+
+```{r Niet-lineaire dimensionale reductie uitvoeren, include=FALSE}
+e65_seuratobject <- RunUMAP(e65_seuratobject, dims = 1:20)
+```
+
+```{r Niet-lineaire dimensionale reductie uitvoeren Figure 8, fig.cap="DimPlot: Op de x-as wordt umap_1 geplot en op de y-as wordt umap_2 geplot. Elke stip representeert een cel. De kleur geeft aan bij welk cluster deze cel hoort."}
+DimPlot(e65_seuratobject, reduction = "umap")
+```
+
+## Het vinden van differentieel tot expressie gebrachte kenmerken (clusterbiomarkers)
+Vervolgens kunnen er voor elke cluster genen gezocht worden die duidelijk meer (of minder) tot expressie komen dan in andere cellen. Dit helpt om te bepalen welke genen een cluster kenmerken.
+
+```{r Clusterbiomarkers, include=FALSE}
+cluster2.markers <- FindMarkers(e65_seuratobject, ident.1 = 2)
+head(cluster2.markers, n = 5)
+cluster5.markers <- FindMarkers(e65_seuratobject, ident.1 = 5, ident.2 = c(0, 3))
+head(cluster5.markers, n = 5)
+e65.markers <- FindAllMarkers(e65_seuratobject, only.pos = TRUE)
+e65.markers %>%
+    group_by(cluster) %>%
+    dplyr::filter(avg_log2FC > 1)
+cluster0.markers <- FindMarkers(e65_seuratobject, ident.1 = 0, logfc.threshold = 0.25, test.use = "roc", only.pos = TRUE)
+```
+
+table(Idents(e65_seuratobject))
+
+```{r Clusterbiomarkers Figure 9, fig.cap="ViolinPlot: Het expressielevel van het gen MS4A1 wordt per cluster weergegeven. In cluster 3 komt dit gen het meest tot expressie."}
+VlnPlot(e65_seuratobject, features = c("MS4A1"))
+```
+
+```{r Clusterbiomarkers Figure 10, fig.cap="FeaturePlot:Op de x-as staat umap_1 en op de y-as staat umap_2. De expressie van MS4A1 wordt aangegeven in het paars."}
+FeaturePlot(e65_seuratobject, features = c("MS4A1"))
+e65.markers %>%
+    group_by(cluster) %>%
+    dplyr::filter(avg_log2FC > 1) %>%
+    slice_head(n = 10) %>%
+    ungroup() -> top10
+```
+
+```{r Clusterbiomarkers Figure 11, fig.cap="DoHeatMap: Op de x-as worden de clusters weergegeven en op de y-as worden de verschillende markers weergegeven. De 10 belangrijkste markers worden per cluster weergegeven. De gele kleur geeft een hoge expressie van het gen aan en de paarse kleur een lage expressie."}
+DoHeatmap(e65_seuratobject, features = top10$gene) + NoLegend()
+```
+
+## Toewijzen van celtype-identiteit aan clusters
+Als laatste stap worden er bekende celtypen gekoppeld aan de clusters.
+
+```{r Toewijzen van celtype-identiteit aan clusters, include=FALSE}
+new.cluster.ids <- c("Naive CD4 T", "CD14+ Mono", "Memory CD4 T", "B", "CD8 T", "FCGR3A+ Mono",
+    "NK", "DC", "Platelet")
+names(new.cluster.ids) <- levels(e65_seuratobject)
+e65_seuratobject <- RenameIdents(e65_seuratobject, new.cluster.ids)
+```
+
+```{r Toewijzen van celtype-identiteit aan clusters Figure 12, fig.cap="DimPlot: Op de x-as staat umap_1 en op de y-as staat umap_2. De clusters zijn aangegeven met verschillende kleuren en in de clusters staan de celtype namen van de desbetreffende cluster."}
+DimPlot(e65_seuratobject, reduction = "umap", label = TRUE, pt.size = 0.5) + NoLegend()
 ```
