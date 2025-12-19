@@ -191,11 +191,11 @@ cluster0.markers <- FindMarkers(e65, ident.1 = 0, logfc.threshold = 0.25, test.u
 table(Idents(e65_seuratobject))
 
 ```{r Clusterbiomarkers Figure 9, fig.cap="ViolinPlot: Het expressielevel van het gen MS4A1 wordt per cluster weergegeven. In cluster 3 komt dit gen het meest tot expressie."}
-VlnPlot(e65_seuratobject, features = c("Tenm3-intron"))
+VlnPlot(e65, features = c("Tenm3-intron"))
 ```
 
 ```{r Clusterbiomarkers Figure 10, fig.cap="FeaturePlot:Op de x-as staat umap_1 en op de y-as staat umap_2. De expressie van MS4A1 wordt aangegeven in het paars."}
-FeaturePlot(e65_seuratobject, features = c("MS4A1"))
+FeaturePlot(e65, features = c("Tenm3-intron"))
 e65.markers %>%
     group_by(cluster) %>%
     dplyr::filter(avg_log2FC > 1) %>%
@@ -204,5 +204,5 @@ e65.markers %>%
 ```
 
 ```{r Clusterbiomarkers Figure 11, fig.cap="DoHeatMap: Op de x-as worden de clusters weergegeven en op de y-as worden de verschillende markers weergegeven. De 10 belangrijkste markers worden per cluster weergegeven. De gele kleur geeft een hoge expressie van het gen aan en de paarse kleur een lage expressie."}
-DoHeatmap(e65_seuratobject, features = top10$gene) + NoLegend()
+DoHeatmap(e65, features = top10$gene) + NoLegend()
 ```
