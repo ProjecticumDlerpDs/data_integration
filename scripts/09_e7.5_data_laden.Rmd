@@ -1,5 +1,5 @@
 ---
-title: "03_7_5_data_laden"
+title: "09_e7.5_data_laden"
 date: "2025-11-27"
 output:
   pdf_document:
@@ -157,7 +157,7 @@ ElbowPlot(e75)
 Nadat de juiste PC’s zijn gekozen (1-10), verdeelt Seurat de cellen in groepen (clusters). Het programma kijkt hiervoor welke cellen het meest op elkaar lijken en verbindt die in een netwerk. Vervolgens zoekt het naar dicht bij elkaar liggende groepjes cellen binnen dat netwerk. Met de resolutie-instelling kun je bepalen of je grotere, bredere groepen of juist kleinere, gedetailleerdere groepen krijgt. In dit geval is er gekozen voor een resolutie van 0.5.
 
 ```{r Clusteren, include=FALSE}
-e75 <- FindNeighbors(e75, dims = 1:10)
+e75 <- FindNeighbors(e75, dims = 1:8)
 e75 <- FindClusters(e75, resolution = 0.5)
 head(Idents(e75), 5)
 ```
@@ -166,7 +166,7 @@ head(Idents(e75), 5)
 Seurat kan technieken zoals UMAP en tSNE gebruiken om de data overzichtelijk weer te geven in twee dimensies. Deze methoden plaatsen cellen die op elkaar lijken dicht bij elkaar, zodat de eerder gevonden clusters ook zichtbaar worden in de plot. Het is een handig hulpmiddel om patronen in de data te verkennen. Het blijft echter een visualisatie: lokale relaties (cellen die erg op elkaar lijken) worden goed weergegeven, maar de grotere, globale structuur is minder betrouwbaar. Gebruik UMAP of tSNE daarom vooral om een indruk van de data te krijgen, maar niet om er alleen op basis van de plot biologische conclusies te trekken.
 
 ```{r Niet-lineaire dimensionale reductie uitvoeren, include=FALSE}
-e75 <- RunUMAP(e75, dims = 1:10)
+e75 <- RunUMAP(e75, dims = 1:8)
 ```
 
 ```{r Niet-lineaire dimensionale reductie uitvoeren Figure 8, fig.cap="DimPlot: Op de x-as wordt umap_1 geplot en op de y-as wordt umap_2 geplot. Elke stip representeert een cel. De kleur geeft aan bij welk cluster deze cel hoort."}
@@ -199,10 +199,15 @@ FeaturePlot(e75, features = c("Tenm3-intron"))
 e75.markers %>%
     group_by(cluster) %>%
     dplyr::filter(avg_log2FC > 1) %>%
-    slice_head(n = 10) %>%
-    ungroup() -> top10
+    slice_head(n = 5) %>%
+    ungroup() -> top5
 ```
 
 ```{r Clusterbiomarkers Figure 11, fig.cap="DoHeatMap: Op de x-as worden de clusters weergegeven en op de y-as worden de verschillende markers weergegeven. De 10 belangrijkste markers worden per cluster weergegeven. De gele kleur geeft een hoge expressie van het gen aan en de paarse kleur een lage expressie."}
-DoHeatmap(e75, features = top10$gene) + NoLegend()
+DoHeatmap(e75, features = top5$gene) + NoLegend()
+
+top5 %>%
+  arrange(cluster, desc(avg_log2FC)) %>%
+  select(cluster, gene)
+
 ```
