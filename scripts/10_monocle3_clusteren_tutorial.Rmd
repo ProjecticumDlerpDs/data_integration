@@ -1,14 +1,15 @@
 ---
-title: "10_Monocle3_clusteren_tutorial"
+title: "10_monocle3_clusteren_tutorial"
 output: pdf_document
 date: "2025-12-28"
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
+# Het groeperen en classificeren van de cellen
 
-```{r monocle3 installeren}
+De tutorial die is gevolgd is te vinden op de volgende site: <https://cole-trapnell-lab.github.io/monocle3/docs/clustering/>. De dataset die gebruikt wordt voor deze tutorial bestaat uit sci-RNA-seq (single cell RNA-seq with combinatorial indexing) data van de C. elegans uit het artikel van [Cao & Packer et al](https://www.science.org/doi/10.1126/science.aam8940).
+
+```{r monocle3 installeren, include=FALSE}
+options(repos = c(CRAN = "https://cloud.r-project.org"))
 if (!requireNamespace("BiocManager", quietly = TRUE))
 install.packages("BiocManager")
 BiocManager::install(version = "3.21")
@@ -21,7 +22,9 @@ remotes::install_github("bnprks/BPCells/r")
 devtools::install_github('cole-trapnell-lab/monocle3')
 ```
 
-```{r load data,}
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
 library(monocle3)
 library(dplyr) # imported for some downstream data manipulation
 
@@ -34,10 +37,14 @@ cds <- new_cell_data_set(expression_matrix,
                          gene_metadata = gene_annotation)
 ```
 
-```{r voorbewerking}
+# Verwerk de gegevens vooraf
+
+```{r voorbewerking figuur 1, results='hide', fig.cap="Elbowplot: Op de x-as zijn 100 PCA components (PC's) weergegeven, op de y-as is de variantie van de PC's weergegeven. "}
 cds <- preprocess_cds(cds, num_dim = 100)
 plot_pc_variance_explained(cds)
 ```
+
+# Verlaag de dimensionaliteit en visualiseer de cellen
 
 ```{r dimentionaliteit verlagen en cellen visualiseren}
 cds <- reduce_dimension(cds)
@@ -48,12 +55,16 @@ cds <- reduce_dimension(cds, reduction_method="tSNE")
 plot_cells(cds, reduction_method="tSNE", color_cells_by="cao_cell_type")
 ```
 
+# Controleer op en verwijder batch-effecten
+
 ```{r batch-effecten}
 plot_cells(cds, color_cells_by="plate", label_cell_groups=FALSE)
 cds <- align_cds(cds, num_dim = 100, alignment_group = "plate")
 cds <- reduce_dimension(cds)
 plot_cells(cds, color_cells_by="plate", label_cell_groups=FALSE)
 ```
+
+# Groepeer cellen in clusters
 
 ```{r cellen clusteren}
 cds <- cluster_cells(cds, resolution=1e-5)
@@ -63,9 +74,11 @@ plot_cells(cds, color_cells_by="cao_cell_type")
 plot_cells(cds, color_cells_by="cao_cell_type", label_groups_by_cluster=FALSE)
 ```
 
+# Zoek markergenen die door elk cluster tot expressie worden gebracht
+
 ```{r expressie markergenen zoeken}
 marker_test_res <- top_markers(cds, group_cells_by="partition", 
-                               reference_cells=1000, cores=8)
+                               reference_cells=1000, cores=1)
 top_specific_markers <- marker_test_res %>%
                             filter(fraction_expressing >= 0.10) %>%
                             group_by(cell_group) %>%
@@ -92,7 +105,9 @@ plot_genes_by_group(cds,
                     max.size=3)
 ```
 
-```{r cellen voorzien van annotatie op basis van het type}
+# Voorzie de cellen van een annotatie op basis van het type
+
+```{r cellen voorzien van annotatie op basis van het type, eval=interactive()}
 colData(cds)$assigned_cell_type <- as.character(partitions(cds))
 colData(cds)$assigned_cell_type <- dplyr::recode(colData(cds)$assigned_cell_type,
                                                  "1"="Body wall muscle",
@@ -167,7 +182,12 @@ plot_cells(cds, group_cells_by="partition",
            labels_per_group=5)
 ```
 
+# Geautomatiseerde annotatie met Garnett
+
 ```{r automatiseren met Garnett}
+colData(cds)$assigned_cell_type_safe <- gsub("[/ ]+", "_", colData(cds)$assigned_cell_type)
+colData(cds)$assigned_cell_type_safe <- gsub("[^A-Za-z0-9_\\-]", "", colData(cds)$assigned_cell_type_safe)
+
 assigned_type_marker_test_res <- top_markers(cds,
                                              group_cells_by="assigned_cell_type",
                                              reference_cells=1000,
@@ -179,8 +199,6 @@ garnett_markers <- assigned_type_marker_test_res %>%
                         filter(marker_test_q_value < 0.01 & specificity >= 0.5) %>%
                         group_by(cell_group) %>%
                         top_n(5, marker_score)
-# Exclude genes that are good markers for more than one cell type:
-garnett_markers <- garnett_markers %>% 
                         group_by(gene_short_name) %>%
                         filter(n() == 1)
 
@@ -193,14 +211,13 @@ devtools::install_github("cole-trapnell-lab/garnett", ref="monocle3")
 library(garnett)
 # install gene database for worm
 BiocManager::install("org.Ce.eg.db")
-library(org.Ce.eg.db)
-library(AnnotationDbi)
 
-colData(cds)$garnett_cluster <- clusters(cds)
+colData(cds)$garnett_cluster <- as.character(clusters(cds, reduction_method = "UMAP")[colnames(cds)])
+table(colData(cds)$garnett_cluster)
 worm_classifier <- train_cell_classifier(cds = cds,
                                          marker_file = "./marker_file.txt", 
                                          db=org.Ce.eg.db::org.Ce.eg.db,
-                                         cds_gene_id_type = "ENSEMBL",
+                                         cds_gene_id_type = "WORMBASE",
                                          num_unknown = 50,
                                          marker_file_gene_id_type = "SYMBOL",
                                          cores=8)
@@ -208,9 +225,15 @@ worm_classifier <- train_cell_classifier(cds = cds,
 cds <- classify_cells(cds, worm_classifier,
                       db = org.Ce.eg.db::org.Ce.eg.db,
                       cluster_extend = TRUE,
-                      cds_gene_id_type = "ENSEMBL")
+                      cds_gene_id_type = "WORMBASE")
 
 plot_cells(cds,
            group_cells_by="partition",
            color_cells_by="cluster_ext_type")
+
+ceWhole <- readRDS(url("https://cole-trapnell-lab.github.io/garnett/classifiers/ceWhole_20191017.RDS"))
+cds <- classify_cells(cds, ceWhole,
+                      db = org.Ce.eg.db,
+                      cluster_extend = TRUE,
+                      cds_gene_id_type = "ENSEMBL")
 ```
