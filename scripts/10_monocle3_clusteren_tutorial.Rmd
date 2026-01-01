@@ -39,40 +39,88 @@ cds <- new_cell_data_set(expression_matrix,
 
 # Verwerk de gegevens vooraf
 
-```{r voorbewerking figuur 1, results='hide', fig.cap="Elbowplot: Op de x-as zijn 100 PCA components (PC's) weergegeven, op de y-as is de variantie van de PC's weergegeven. "}
+Wanneer de data geladen is en alle benodigde packages zijn geïnstalleerd, is de volgende stap om de data voor te bewerken. Dit is een stap waarbij je aangeeft hoe je de data wilt normaliseren, welke dementiereductiemethode je wilt gebruiken en hoe je eventuele batch-effecten wilt verwijderen. In figuur 1 is een elbowplot weergegeven met op de x-as de PCA components (PC's) en op de y-as de variantie. Een elboowplot laat zien hoeveel variantie elke PC toevoegt. Het punt waar de "elleboog" het duidelijkst zichtbaar is, geeft een geschikt aantal PC's aan.
+
+```{r voorbewerking, results='hide'}
 cds <- preprocess_cds(cds, num_dim = 100)
+```
+
+```{r voorbewerking figuur 1, results='hide', fig.cap="Elbowplot: Op de x-as zijn 100 PCA components (PC's) weergegeven, op de y-as is de variantie van de PC's weergegeven. "}
 plot_pc_variance_explained(cds)
 ```
 
 # Verlaag de dimensionaliteit en visualiseer de cellen
 
-```{r dimentionaliteit verlagen en cellen visualiseren}
+De voorbewerking is klaar, nu kunnen de cellen gevisualieerd worden met behulp van een Uniform Manifold Approximation and Projection (UMAP). Een UMAP is een techniek voor dimensionale reductie. Het zet complexe biologische informatie om in een overzichtelijk figuur. Elke cel wordt weergeven als een stipje. De positie van de cel wordt gebaseerd op de genen die actief zijn binnen de cel. In figuur 2 is een UMAP weergegeven waarbij alle cellen een positie hebben gekregen.
+
+```{r dimentionaliteit verlagen en cellen visualiseren, include=FALSE}
 cds <- reduce_dimension(cds)
+```
+
+```{r dimentionaliteit verlagen en cellen visualiseren figuur 2, results='hide', fig.cap="UMAP: Cellen hebben een positie gekregen."}
 plot_cells(cds)
+```
+
+Cellen, waarvan de actieve genen op elkaar lijken, zullen dicht bij elkaar gaan liggen (clusteren). Deze clusters kunnen verschillende celtypen of toestanden zijn. Wanneer een cluster overgaat in een andere cluster kunnen dit differentierende cellen zijn. In figuur 3 zijn de clusters aangegeven met verschillende kleuren, en zijn de namen erbij gezet. De namen van deze clusters zijn handmatig uitgezocht door Cao & Packer.
+
+```{r dimentionaliteit verlagen en cellen visualiseren figuur 3, results='hide', fig.cap="UMAP: Clusters worden weergegeven met een kleur en een naam."}
 plot_cells(cds, color_cells_by="cao_cell_type")
+```
+
+In figuur 3 liggen de clusters erg dicht op elkaar. De UMAP kan ook zo worden weergegeven dat een enkel gen weergegeven wordt, en ook in welke mate deze aanwezig is. In figuur 4 wordt zo'n UMAP weergegeven. De genen cpna-2, egl-21, ram-2 en inos-1 worden elk weergegeven.
+
+```{r dimentionaliteit verlagen en cellen visualiseren figuur 4, results='hide', fig.cap="UMAP: De genen cpna-2, egl-21, ram-2 en inos-1 worden elk weergegeven in de mate dat ze voorkomen."}
 plot_cells(cds, genes=c("cpna-2", "egl-21", "ram-2", "inos-1"))
+```
+
+Een andere techniek die gebruikt kan worden is t-distributed Stochastic Neighbor Embedding (tSNE). Deze techniek is vooral gefocust op het laten zien van duidelijke clusters. Het grote verchil tussen tSNE en UMAP is dat de afstand tussen de cellen bij UMAP zegt hoeveel de cellen van elkaar verschillen en bij tSNE zegt de afstand niet zoveel. Hierdoor kunnen de gegenereerde plaatjes ook steeds veranderen bij tSNE. In figuur 5 is een voorbeeld van een tSNE plot waarbij de clusters een kleur en een naam hebben gekregen.
+
+```{r dimentionaliteit verlagen en cellen visualiseren, include=FALSE}
 cds <- reduce_dimension(cds, reduction_method="tSNE")
+```
+
+```{r dimentionaliteit verlagen en cellen visualiseren figuur 5, results='hide', fig.cap="tSNE: Clusters worden weergegeven met een kleur en een naam."}
 plot_cells(cds, reduction_method="tSNE", color_cells_by="cao_cell_type")
 ```
 
 # Controleer op en verwijder batch-effecten
 
-```{r batch-effecten}
+Tijdens het uitvoeren van experimenten waarbij heel veel samples gebruikt worden, worden de experimenten opgedeeld. Hierdoor ontstaan een hoop verschillen. De expirimenten worden uitgevoerd op verschillende dagen, op en met verschillende apparatuur, door verschillende analisten of zelfs met verschillende muizen. Dit zijn allemaal vormen van batch-verschillen. Om de data met elkaar te kunnen vergelijken moeten deze batch-verschillen worden verwijderd. In figuur 6 worden de verschillende platen die gebruikt zijn weergegevn door elke cel de kleur te geven van de plaat waar deze cel van afkomstig is. Hiermee wordt zichtbaar gemaakt of er duidelijke verschillen zijn tussen de platen, bijvoorbeeld als er een aparte cluster ontstaat van één kleur.
+
+```{r batch-effecten figuur 6, results='hide', fig.cap="UMAP: De cellen zijn gekleurd op bais van de plaat waar ze van afkomstig zijn."}
 plot_cells(cds, color_cells_by="plate", label_cell_groups=FALSE)
+```
+
+Met behulp van [wederzijdse uitlijning van dichtsbijzijnde buren](https://www.nature.com/articles/nbt.4091) worden eventuele batch-effecten verwijderd. Dit is een techniek die is geïntroduceerd door het lab van John Marioni, en binnen Monocle3 wordt er gebruikt gemaakt van Aaron Lun's package genaamd [batchelor](https://bioconductor.org/packages/release/bioc/html/batchelor.html). In figuur 7 zijn deze batch-effecten verwijderd.
+
+```{r batch-effecten, include=FALSE}
 cds <- align_cds(cds, num_dim = 100, alignment_group = "plate")
 cds <- reduce_dimension(cds)
+```
+
+```{r batch-effecten figuur 7, results='hide', fig.cap="UMAP: De cellen zijn gekleurd op basis van de plaat waar ze van afkomstig zijn. In dit figuur zijn de batch-effecten gecorrigieerd."}
 plot_cells(cds, color_cells_by="plate", label_cell_groups=FALSE)
 ```
 
 # Groepeer cellen in clusters
 
-```{r cellen clusteren}
+De cellen moeten worden gegroepeerd in clusters, hiervoor maakt monocle3 gebruik van een techniek genaamd [community detection](https://www.nature.com/articles/s41598-019-41695-z). In figuur 8 is een UMAP weergegeven op basis van clusters.
+
+```{r cellen clusteren voorbewerking figuur 8, include=FALSE}
 cds <- cluster_cells(cds, resolution=1e-5)
-plot_cells(cds)
-plot_cells(cds, color_cells_by="partition", group_cells_by="partition")
-plot_cells(cds, color_cells_by="cao_cell_type")
-plot_cells(cds, color_cells_by="cao_cell_type", label_groups_by_cluster=FALSE)
 ```
+
+```{r cellen clusteren figuur 8, results='hide', fig.cap="UMAP: clusters gevormd op basis van resolutie. Elke cluster is weergegeven met een kleur en een cijfer."}
+plot_cells(cds)
+```
+
+Wanneer je alle cellen opdeelt in clusters, kun je heel veel kleine clusters krijgen. Deze clusters kunnen weer samengevoegd worden in partities. Een partitie kan een celtype zijn, waarbij de clusters bestaan uit specifieke celtoestanden. In figuur 9 is een UMAP zichtbaar waarbij de cellen opgedeeld zijn in partities.
+
+```{r cellen clusteren figuur 9, results='hide', fig.cap="UMAP: clusters gevormd op basis van partities. Elke cluster is weergegeven met een kleur en een cijfer."}
+plot_cells(cds, color_cells_by="partition", group_cells_by="partition")
+```
+
+De figuren kunnen zo gemaakt worden dat de cellen worden gekleurd op basis van cluster of partitie. Ook kan het getal vervangen worden door de naam van deze cluster of partitie.
 
 # Zoek markergenen die door elk cluster tot expressie worden gebracht
 
