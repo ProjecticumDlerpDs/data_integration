@@ -17,6 +17,7 @@ library(dplyr)
 library(Seurat)
 library(patchwork)
 library(here)
+library(ggplot2)
 
 # Globale knitr-instellingen
 knitr::opts_chunk$set(
@@ -132,8 +133,8 @@ e65 <- RunPCA(e65, features = VariableFeatures(object = e65))
 print(e65[["pca"]], dims = 1:5, nfeatures = 5)
 ```
 
-```{r Lineaire dimensionale reductie uitvoeren figuur 4, fig.cap="VizDimLoadings. De topgenen worden weergegeven die geassiocieerd worden met PC1 of PC2."}
-VizDimLoadings(e65, dims = 1:2, reduction = "pca")
+```{r Lineaire dimensionale reductie uitvoeren figuur 4, fig.cap="VizDimLoadings. De topgenen worden weergegeven die geassiocieerd worden met PC1."}
+VizDimLoadings(e65, dims = 1, reduction = "pca")
 ```
 
 ```{r Lineaire dimensionale reductie uitvoeren figuur 5, fig.cap="DimPlot, Op de x-as wordt PC1 geplot en op de y-as wordt PC2 geplot. Elke stip representeert een cel."}
