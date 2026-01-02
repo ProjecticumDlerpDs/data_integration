@@ -23,10 +23,16 @@ devtools::install_github('cole-trapnell-lab/monocle3')
 ```
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
 library(monocle3)
 library(dplyr) # imported for some downstream data manipulation
+
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  fig.pos = "H",
+  fig.show = "hold"
+)
 
 expression_matrix <- readRDS(url("https://depts.washington.edu:/trapnell-lab/software/monocle3/celegans/data/cao_l2_expression.rds"))
 cell_metadata <- readRDS(url("https://depts.washington.edu:/trapnell-lab/software/monocle3/celegans/data/cao_l2_colData.rds"))
@@ -53,7 +59,7 @@ plot_pc_variance_explained(cds)
 
 De voorbewerking is klaar, nu kunnen de cellen gevisualieerd worden met behulp van een Uniform Manifold Approximation and Projection (UMAP). Een UMAP is een techniek voor dimensionale reductie. Het zet complexe biologische informatie om in een overzichtelijk figuur. Elke cel wordt weergeven als een stipje. De positie van de cel wordt gebaseerd op de genen die actief zijn binnen de cel. In figuur 2 is een UMAP weergegeven waarbij alle cellen een positie hebben gekregen.
 
-```{r dimentionaliteit verlagen en cellen visualiseren, include=FALSE}
+```{r dimentionaliteit verlagen en cellen visualiseren voorbewerking figuur 2, include=FALSE}
 cds <- reduce_dimension(cds)
 ```
 
@@ -75,7 +81,7 @@ plot_cells(cds, genes=c("cpna-2", "egl-21", "ram-2", "inos-1"))
 
 Een andere techniek die gebruikt kan worden is t-distributed Stochastic Neighbor Embedding (tSNE). Deze techniek is vooral gefocust op het laten zien van duidelijke clusters. Het grote verchil tussen tSNE en UMAP is dat de afstand tussen de cellen bij UMAP zegt hoeveel de cellen van elkaar verschillen en bij tSNE zegt de afstand niet zoveel. Hierdoor kunnen de gegenereerde plaatjes ook steeds veranderen bij tSNE. In figuur 5 is een voorbeeld van een tSNE plot waarbij de clusters een kleur en een naam hebben gekregen.
 
-```{r dimentionaliteit verlagen en cellen visualiseren, include=FALSE}
+```{r dimentionaliteit verlagen en cellen visualiseren voorbewerking figuur 5, include=FALSE}
 cds <- reduce_dimension(cds, reduction_method="tSNE")
 ```
 
@@ -85,7 +91,7 @@ plot_cells(cds, reduction_method="tSNE", color_cells_by="cao_cell_type")
 
 # Controleer op en verwijder batch-effecten
 
-Tijdens het uitvoeren van experimenten waarbij heel veel samples gebruikt worden, worden de experimenten opgedeeld. Hierdoor ontstaan een hoop verschillen. De expirimenten worden uitgevoerd op verschillende dagen, op en met verschillende apparatuur, door verschillende analisten of zelfs met verschillende muizen. Dit zijn allemaal vormen van batch-verschillen. Om de data met elkaar te kunnen vergelijken moeten deze batch-verschillen worden verwijderd. In figuur 6 worden de verschillende platen die gebruikt zijn weergegevn door elke cel de kleur te geven van de plaat waar deze cel van afkomstig is. Hiermee wordt zichtbaar gemaakt of er duidelijke verschillen zijn tussen de platen, bijvoorbeeld als er een aparte cluster ontstaat van één kleur.
+Tijdens het uitvoeren van experimenten waarbij heel veel samples gebruikt worden, worden de experimenten opgedeeld. Hierdoor ontstaan een hoop verschillen. De expirimenten worden uitgevoerd op verschillende dagen, op en met verschillende apparatuur, door verschillende analisten of zelfs met verschillende muizen. Dit zijn allemaal vormen van batch-verschillen. Om de data met elkaar te kunnen vergelijken moeten deze batch-verschillen worden verwijderd. In figuur 6 worden de verschillende platen die gebruikt zijn weergegeven door elke cel de kleur te geven van de plaat waar deze cel van afkomstig is. Hiermee wordt zichtbaar gemaakt of er duidelijke verschillen zijn tussen de platen, bijvoorbeeld als er een aparte cluster ontstaat van één kleur.
 
 ```{r batch-effecten figuur 6, results='hide', fig.cap="UMAP: De cellen zijn gekleurd op bais van de plaat waar ze van afkomstig zijn."}
 plot_cells(cds, color_cells_by="plate", label_cell_groups=FALSE)
@@ -124,40 +130,38 @@ De figuren kunnen zo gemaakt worden dat de cellen worden gekleurd op basis van c
 
 # Zoek markergenen die door elk cluster tot expressie worden gebracht
 
-```{r expressie markergenen zoeken}
-marker_test_res <- top_markers(cds, group_cells_by="partition", 
-                               reference_cells=1000, cores=1)
-top_specific_markers <- marker_test_res %>%
-                            filter(fraction_expressing >= 0.10) %>%
-                            group_by(cell_group) %>%
-                            top_n(1, pseudo_R2)
+Zodra de cellen zijn geclusterd kan er gekeken worden naar wat het verschil is in genen tussen de partities. Hiervoor wordt er gekeken naar de genen die het meest tot expressie komen. In figuur 10 is een Dotplot weergegeven waarin zichtbaar is gemaakt welk gen het meest tot expressie komt per partitie. Op de x-as staan de verschillende partities en op de y-as staan de verschillende genen. De grootte van de dot geeft aan wat het percentage is van dit gen in de partitie. De kleur van de dot geeft aan hoe sterk het gen tot expressie komt.
 
-top_specific_marker_ids <- unique(top_specific_markers %>% pull(gene_id))
+Het kan nodig zijn om naar meerdere genen te kijken binnen een partitie. Het figuur kan dan ook aangepast worden door bijvoorbeeld de top 3 genen weer te geven.
+
+```{r expressie markergenen zoeken voorbewerking figuur 10, include=FALSE}
+marker_test_res <- top_markers(cds,                            # cds = CellDataSet, is specifiek voor monocle3
+                               group_cells_by="partition",     # group_cells_by="partition" vergelijkt genexpressie tussen partitions
+                               reference_cells=1000)           # reference_cells=1000 geeft aan dat er een referentieset van maximaal 1000 cellen gebruikt wordt
+
+top_specific_markers <- marker_test_res %>%
+                            filter(fraction_expressing >= 0.10) %>% # Gooit zeldzame/ruisachtige genen weg die maar in heel weinig cellen voorkomen
+                            group_by(cell_group) %>%                # De cellen worden gegroepeerd bij cell_group (partition)
+                            top_n(1, pseudo_R2)                     # Per partition wordt het gen gekozen met de hoogste pseudo_R2 score (de hoogste specificiteit)
+
+top_specific_marker_ids <- unique(top_specific_markers %>% pull(gene_id)) # unique maakt de gene_id's uniek zodat er geen overlap is
+```
+
+```{r expressie markergenen zoeken figuur 10, results='hide', fig.cap="Dotplot: Op de x-as staan de partitions en op de y-as staan de genen. De grootte van de dot geeft aan wat het percentage is van dit gen in de partitie. De kleur van de dot geeft aan hoe sterk het gen tot expressie komt."}
 plot_genes_by_group(cds,
                     top_specific_marker_ids,
                     group_cells_by="partition",
                     ordering_type="maximal_on_diag",
                     max.size=3)
-
-top_specific_markers <- marker_test_res %>%
-                            filter(fraction_expressing >= 0.10) %>%
-                            group_by(cell_group) %>%
-                            top_n(3, pseudo_R2)
-
-top_specific_marker_ids <- unique(top_specific_markers %>% pull(gene_id))
-
-plot_genes_by_group(cds,
-                    top_specific_marker_ids,
-                    group_cells_by="partition",
-                    ordering_type="cluster_row_col",
-                    max.size=3)
 ```
 
 # Voorzie de cellen van een annotatie op basis van het type
 
-```{r cellen voorzien van annotatie op basis van het type, eval=interactive()}
+Nu de clusters gemaakt zijn en de topgenen bekend zijn, kan er gekeken worden wat het celtype van de cluster is. Hiervoor hebben de auteurs van Cao & Packer in de literatuur gekeken en elke cluster een naam gegeven. Nu kunnen deze namen worden toegewezenaan de clusters, door de getallen van de clusters te vervangen door de juiste namen. Dit proces is erg bewerkelijk en hier kunnen dan ook fouten in optreden. Zo kunnen de namen op de verkeerde plek neergezet worden of kan er een typfout gemaakt worden.
+
+```{r cellen voorzien van annotatie op basis van het type voorbewerking figuur 11, include=FALSE}
 colData(cds)$assigned_cell_type <- as.character(partitions(cds))
-colData(cds)$assigned_cell_type <- dplyr::recode(colData(cds)$assigned_cell_type,
+colData(cds)$assigned_cell_type <- dplyr::recode(colData(cds)$assigned_cell_type, # De partition cijfers worden hier vervangen door de nieuwe namen
                                                  "1"="Body wall muscle",
                                                  "2"="Germline",
                                                  "3"="Motor neurons",
@@ -191,97 +195,9 @@ colData(cds)$assigned_cell_type <- dplyr::recode(colData(cds)$assigned_cell_type
                                                  "31"="Excretory cells",
                                                  "32"="Amphid neuron",
                                                  "33"="Pharyngeal muscle")
+```
+
+```{r cellen voorzien van annotatie op basis van het type figuur 11, results='hide', fig.cap="UMAP: De partitions zijn aangegeven met een kleur en een naam. De cijfers van de partitions zijn nu vervangen door de juiste namen."}
 plot_cells(cds, group_cells_by="partition", color_cells_by="assigned_cell_type")
-cds_subset <- choose_cells(cds)
-pr_graph_test_res <- graph_test(cds_subset, neighbor_graph="knn", cores=8)
-pr_deg_ids <- row.names(subset(pr_graph_test_res, morans_I > 0.01 & q_value < 0.05))
-gene_module_df <- find_gene_modules(cds_subset[pr_deg_ids,], resolution=1e-3)
-plot_cells(cds_subset, genes=gene_module_df, 
-           show_trajectory_graph=FALSE, 
-           label_cell_groups=FALSE)
-
-cds_subset <- cluster_cells(cds_subset, resolution=1e-2)
-plot_cells(cds_subset, color_cells_by="cluster")
-
-colData(cds_subset)$assigned_cell_type <- as.character(clusters(cds_subset)[colnames(cds_subset)])
-colData(cds_subset)$assigned_cell_type <- dplyr::recode(colData(cds_subset)$assigned_cell_type,
-                                                        "1"="Sex myoblasts",
-                                                        "2"="Somatic gonad precursors",
-                                                        "3"="Vulval precursors",
-                                                        "4"="Sex myoblasts",
-                                                        "5"="Vulval precursors",
-                                                        "6"="Somatic gonad precursors",
-                                                        "7"="Sex myoblasts",
-                                                        "8"="Sex myoblasts",
-                                                        "9"="Ciliated neurons",
-                                                        "10"="Vulval precursors",
-                                                        "11"="Somatic gonad precursor",
-                                                        "12"="Distal tip cells",
-                                                        "13"="Somatic gonad precursor",
-                                                        "14"="Sex myoblasts",
-                                                        "15"="Vulval precursors")
-
-plot_cells(cds_subset, group_cells_by="cluster", color_cells_by="assigned_cell_type")
-
-colData(cds)[colnames(cds_subset),]$assigned_cell_type <- colData(cds_subset)$assigned_cell_type
-cds <- cds[,colData(cds)$assigned_cell_type != "Failed QC" | is.na(colData(cds)$assigned_cell_type )]
-plot_cells(cds, group_cells_by="partition", 
-           color_cells_by="assigned_cell_type", 
-           labels_per_group=5)
 ```
 
-# Geautomatiseerde annotatie met Garnett
-
-```{r automatiseren met Garnett}
-colData(cds)$assigned_cell_type_safe <- gsub("[/ ]+", "_", colData(cds)$assigned_cell_type)
-colData(cds)$assigned_cell_type_safe <- gsub("[^A-Za-z0-9_\\-]", "", colData(cds)$assigned_cell_type_safe)
-
-assigned_type_marker_test_res <- top_markers(cds,
-                                             group_cells_by="assigned_cell_type",
-                                             reference_cells=1000,
-                                             cores=8)
-
-# Require that markers have at least JS specificty score > 0.5 and
-# be significant in the logistic test for identifying their cell type:
-garnett_markers <- assigned_type_marker_test_res %>%
-                        filter(marker_test_q_value < 0.01 & specificity >= 0.5) %>%
-                        group_by(cell_group) %>%
-                        top_n(5, marker_score)
-                        group_by(gene_short_name) %>%
-                        filter(n() == 1)
-
-generate_garnett_marker_file(garnett_markers, file="./marker_file.txt")
-
-## Install the monocle3 branch of garnett
-BiocManager::install(c("org.Mm.eg.db", "org.Hs.eg.db"))
-devtools::install_github("cole-trapnell-lab/garnett", ref="monocle3")
-
-library(garnett)
-# install gene database for worm
-BiocManager::install("org.Ce.eg.db")
-
-colData(cds)$garnett_cluster <- as.character(clusters(cds, reduction_method = "UMAP")[colnames(cds)])
-table(colData(cds)$garnett_cluster)
-worm_classifier <- train_cell_classifier(cds = cds,
-                                         marker_file = "./marker_file.txt", 
-                                         db=org.Ce.eg.db::org.Ce.eg.db,
-                                         cds_gene_id_type = "WORMBASE",
-                                         num_unknown = 50,
-                                         marker_file_gene_id_type = "SYMBOL",
-                                         cores=8)
-
-cds <- classify_cells(cds, worm_classifier,
-                      db = org.Ce.eg.db::org.Ce.eg.db,
-                      cluster_extend = TRUE,
-                      cds_gene_id_type = "WORMBASE")
-
-plot_cells(cds,
-           group_cells_by="partition",
-           color_cells_by="cluster_ext_type")
-
-ceWhole <- readRDS(url("https://cole-trapnell-lab.github.io/garnett/classifiers/ceWhole_20191017.RDS"))
-cds <- classify_cells(cds, ceWhole,
-                      db = org.Ce.eg.db,
-                      cluster_extend = TRUE,
-                      cds_gene_id_type = "ENSEMBL")
-```
