@@ -10,10 +10,12 @@ header-includes:
 ---
 
 ```{r setup, include=FALSE}
+# Benodigde packages openen
 library(dplyr)
 library(Seurat)
 library(patchwork)
 library(here)
+library(ggplot2)
 
 # Globale knitr-instellingen
 knitr::opts_chunk$set(
@@ -50,13 +52,9 @@ e75 <- CreateSeuratObject(counts = expression_matrix,
 
 e75[["percent.mt"]] <- PercentageFeatureSet(e75, pattern = "^mt-")
 
-Idents(e75) <- "E7.5"
-
-VlnPlot(e75, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
 ```
 
-```{r }
-Idents(e75_seuratobject) <- "E7.5"
+```{r QC and selecteren van cellen figuur 1, fig.cap=Vioolplot: Er zijn drie vioolplots naast elkaar weergegeven. In alle drie de vioolplots wordt op de x-as de dataset E7.5 weergegeven. Elk stipje is een cel. Links wordt op de y-as het aantal unieke features weergegeven. In het midden staat op de y-as het aantal RNA binnen de cel. Rechts wordt op de y-as het percentage mitochondriale RNA weergegeven.}
 vlnfeature <- VlnPlot(e75, 
         features = "nFeature_RNA") +
   theme(axis.text.x = element_blank()) + 
@@ -87,7 +85,7 @@ plot1 <- FeatureScatter(e75, feature1 = "nCount_RNA", feature2 = "percent.mt")
 plot2 <- FeatureScatter(e75, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
 ```
 
-```{r QC and selecting cells Figure 2, fig.cap="FeatureScatterplots: Er zijn twee scatterplots naast elkaar weergegeven, bij beide scatterplots staat op de x-as het aantal RNA binnen de cel. Elk stipje is een cel. Links is op de y-as het percentage mitochondriale genen weergegeven, waarbij alleen cellen meegenomen zijn die een percentage lager dan 5% mitochondriale genen hebben. Rechts is op de y-as het aantal unieke features per cel weergegeven, waarbij alleen de cellen meegenomen zijn die tussen de 200 en 2500 unieke features hebben."}
+```{r QC and selecting cells figuur 2, fig.cap="FeatureScatterplots: Er zijn twee scatterplots naast elkaar weergegeven, bij beide scatterplots staat op de x-as het aantal RNA binnen de cel. Elk stipje is een cel. Links is op de y-as het percentage mitochondriale genen weergegeven, waarbij alleen cellen meegenomen zijn die een percentage lager dan 5% mitochondriale genen hebben. Rechts is op de y-as het aantal unieke features per cel weergegeven, waarbij alleen de cellen meegenomen zijn die tussen de 200 en 2500 unieke features hebben."}
 plot1 + plot2
 ```
 
@@ -114,7 +112,7 @@ plot1 <- VariableFeaturePlot(e75)
 plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
 ```
 
-```{r Kenmerkselectie Figure 3, fig.cap="VariableFeaturePlot: Op de x-as wordt de gemiddelde expressie weergegeven. Op de y-as wordt de standaard variantie weergegeven. De 2000 cellen met de meest variërende kenmerken zijn rood gekleurd en de 10 cellen met de meest variërende genen zijn aangegeven met hun naam."}
+```{r Kenmerkselectie figuur 3, fig.cap="VariableFeaturePlot: Op de x-as wordt de gemiddelde expressie weergegeven. Op de y-as wordt de standaard variantie weergegeven. De 2000 cellen met de meest variërende kenmerken zijn rood gekleurd en de 10 cellen met de meest variërende genen zijn aangegeven met hun naam."}
 plot2
 ```
 
@@ -134,22 +132,22 @@ e75 <- RunPCA(e75, features = VariableFeatures(object = e75))
 print(e75[["pca"]], dims = 1:5, nfeatures = 5)
 ```
 
-```{r Lineaire dimensionale reductie uitvoeren Figure 4, fig.cap="VizDimLoadings. De topgenen worden weergegeven die geassiocieerd worden met PC1 of PC2."}
-VizDimLoadings(e75, dims = 1:2, reduction = "pca")
+```{r Lineaire dimensionale reductie uitvoeren figuur 4, fig.cap="VizDimLoadings. De topgenen worden weergegeven die geassiocieerd worden met PC1."}
+VizDimLoadings(e75, dims = 1, reduction = "pca")
 ```
 
-```{r Lineaire dimensionale reductie uitvoeren Figure 5, fig.cap="DimPlot, Op de x-as wordt PC1 geplot en op de y-as wordt PC2 geplot. Elke stip representeert een cel."}
+```{r Lineaire dimensionale reductie uitvoeren figuur 5, fig.cap="DimPlot, Op de x-as wordt PC1 geplot en op de y-as wordt PC2 geplot. Elke stip representeert een cel."}
 DimPlot(e75, reduction = "pca") + NoLegend()
 ```
 
-```{r Lineaire dimensionale reductie uitvoeren Figure 6, fig.cap="DimHeatmap, PC1 wordt weergegeven met als de verschillende genen in de rijen, en verschillende cellen in de kolommen. Paars is een lage PCA-score, geel is een hoge PCA-score. Clusters worden hiermee gevisualiseerd"}
+```{r Lineaire dimensionale reductie uitvoeren figuur 6, fig.cap="DimHeatmap, PC1 wordt weergegeven met als de verschillende genen in de rijen, en verschillende cellen in de kolommen. Paars is een lage PCA-score, geel is een hoge PCA-score. Clusters worden hiermee gevisualiseerd"}
 DimHeatmap(e75, dims = 1, cells = 454, balanced = TRUE)
 ```
 
 ## Dimensionaliteit
 Om ruis te voorkomen in verdere analyse wordt er gekeken hoeveel PC's meegenomen moeten worden. Hiervoor kan er gebruik gemaakt worden van een elbowplot. In deze plot worden de PC's op de x-as geplaatst en de standaard deviatie op de y-as. Er ontstaat een soort van arm, waarbij de elleboog het keerpunt is. De PC's voor de elleboog worden meegenomen en de PC's na de elleboog worden niet meegenomen. Het verschil tussen de PC's na de elleboog is niet relevant genoeg om mee te nemen. In Figure 7 is de elleboog zichtbaar tussen 9 en 10.
 
-```{r Dimensionaliteit Figure 7, fig.cap="ElbowPlot: Op de x-as staan de PC's en op de y-as staan de standaard deviatie."}
+```{r Dimensionaliteit figuur 7, fig.cap="ElbowPlot: Op de x-as staan de PC's en op de y-as staan de standaard deviatie."}
 ElbowPlot(e75)
 ```
 
@@ -169,7 +167,7 @@ Seurat kan technieken zoals UMAP en tSNE gebruiken om de data overzichtelijk wee
 e75 <- RunUMAP(e75, dims = 1:8)
 ```
 
-```{r Niet-lineaire dimensionale reductie uitvoeren Figure 8, fig.cap="DimPlot: Op de x-as wordt umap_1 geplot en op de y-as wordt umap_2 geplot. Elke stip representeert een cel. De kleur geeft aan bij welk cluster deze cel hoort."}
+```{r Niet-lineaire dimensionale reductie uitvoeren figuur 8, fig.cap="DimPlot: Op de x-as wordt umap_1 geplot en op de y-as wordt umap_2 geplot. Elke stip representeert een cel. De kleur geeft aan bij welk cluster deze cel hoort."}
 DimPlot(e75, reduction = "umap")
 ```
 
@@ -190,11 +188,11 @@ cluster0.markers <- FindMarkers(e75, ident.1 = 0, logfc.threshold = 0.25, test.u
 
 table(Idents(e75_seuratobject))
 
-```{r Clusterbiomarkers Figure 9, fig.cap="ViolinPlot: Het expressielevel van het gen MS4A1 wordt per cluster weergegeven. In cluster 3 komt dit gen het meest tot expressie."}
+```{r Clusterbiomarkers figuur 9, fig.cap="ViolinPlot: Het expressielevel van het gen MS4A1 wordt per cluster weergegeven. In cluster 3 komt dit gen het meest tot expressie."}
 VlnPlot(e75, features = c("Tenm3-intron"))
 ```
 
-```{r Clusterbiomarkers Figure 10, fig.cap="FeaturePlot:Op de x-as staat umap_1 en op de y-as staat umap_2. De expressie van MS4A1 wordt aangegeven in het paars."}
+```{r Clusterbiomarkers figuur 10, fig.cap="FeaturePlot:Op de x-as staat umap_1 en op de y-as staat umap_2. De expressie van MS4A1 wordt aangegeven in het paars."}
 FeaturePlot(e75, features = c("Tenm3-intron"))
 e75.markers %>%
     group_by(cluster) %>%
@@ -203,7 +201,7 @@ e75.markers %>%
     ungroup() -> top5
 ```
 
-```{r Clusterbiomarkers Figure 11, fig.cap="DoHeatMap: Op de x-as worden de clusters weergegeven en op de y-as worden de verschillende markers weergegeven. De 10 belangrijkste markers worden per cluster weergegeven. De gele kleur geeft een hoge expressie van het gen aan en de paarse kleur een lage expressie."}
+```{r Clusterbiomarkers figuur 11, fig.cap="DoHeatMap: Op de x-as worden de clusters weergegeven en op de y-as worden de verschillende markers weergegeven. De 10 belangrijkste markers worden per cluster weergegeven. De gele kleur geeft een hoge expressie van het gen aan en de paarse kleur een lage expressie."}
 DoHeatmap(e75, features = top5$gene) + NoLegend()
 
 top5 %>%
