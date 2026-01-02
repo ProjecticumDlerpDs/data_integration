@@ -11,13 +11,11 @@ if (!dir.exists(outdir)) {
   dir.create(outdir, recursive = TRUE)
 }
 
-# Laad CSV (alleen de eerste 10 rijen voor voorbeeld)
-counts <- read.csv(input_file, row.names = 1)
-
-# Zet om naar numeric matrix
+# Zet bestand om van csv naar numeric matrix
 counts_matrix <- as.matrix(counts)
 counts_matrix <- Matrix(counts_matrix, sparse = TRUE)
 
 writeMM(counts_matrix, file = file.path(outdir, "e95_count_matrix.mtx"))
 
+# Zip het bestand om de ruimte die wordt ingenomen te beperken
 system("gzip -9 ~/data_integration/bewerkte_data/*.mtx")
