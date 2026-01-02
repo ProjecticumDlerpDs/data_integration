@@ -12,6 +12,7 @@ date: "`r Sys.Date()`"
 De tutorial die is gevolgd is te vinden op de volgende site:  https://satijalab.org/seurat/articles/pbmc3k_tutorial. De dataset die gebruikt wordt voor deze tutorial bestaat uit 2.700 single cells (PBMC's, peripheral blood mononuclear cells) die zijn gesequenced in de Illumina Nextseq 500. De dataset is van 10X Genomics, en de ruwe data kan gevonden worden op deze site: https://cf.10xgenomics.com/samples/cell/pbmc3k/pbmc3k_filtered_gene_bc_matrices.tar.gz.
 
 ```{r setup, include=FALSE}
+# Benodigde packages openen
 library(dplyr)
 library(Seurat)
 library(patchwork)
