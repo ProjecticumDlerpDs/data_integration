@@ -37,7 +37,7 @@ convert_csv_to_mtx_gz <- function(input_file, outdir) {
   # Schrijf de sparse matrix naar .mtx
   writeMM(counts_matrix, file = out_mtx)
   
-  # Comprimeer achteraf met maximale gzip-compressie
+  # Comprimeer achteraf met maximale gzip-compressie voor minder grote bestanden
   system(paste("gzip -9 -f", shQuote(out_mtx)))
   
   # Geef een bericht wanneer een bestand klaar is
