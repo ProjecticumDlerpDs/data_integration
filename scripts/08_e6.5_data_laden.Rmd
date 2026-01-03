@@ -53,6 +53,8 @@ e65 <- CreateSeuratObject(counts = expression_matrix,
                                     min.features = 200)
 
 e65[["percent.mt"]] <- PercentageFeatureSet(e65, pattern = "^mt-")
+
+Idents(e65) <- "E6.5"
 ```
 
 ```{r QC and selecteren van cellen figuur 1, results='hide', fig.cap="Vioolplot: Er zijn drie vioolplots naast elkaar weergegeven. In alle drie de vioolplots wordt op de x-as de dataset E6.5 weergegeven. Elk stipje is een cel. Links wordt op de y-as het aantal unieke features weergegeven. In het midden staat op de y-as het aantal RNA binnen de cel. Rechts wordt op de y-as het percentage mitochondriale RNA weergegeven."}
