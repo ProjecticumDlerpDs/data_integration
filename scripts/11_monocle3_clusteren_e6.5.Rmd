@@ -22,49 +22,56 @@ devtools::install_github('cole-trapnell-lab/monocle3')
 
 ```{r setup, include=FALSE}
 library(monocle3)
-library(dplyr) # imported for some downstream data manipulation
-
-knitr::opts_chunk$set(
-  echo = FALSE,
-  message = FALSE,
-  warning = FALSE,
-  fig.pos = "H",
-  fig.show = "hold"
-)
+library(dplyr)
+library(data.table)
+library(Matrix)
 
 datadir <- "/home/data/projecticum/splicing/data/"
 
-# 1) counts als CSV (genen x cellen, 1e kolom = gen-ID)
-expression_matrix <- as.matrix(
-  read.csv(
-    file.path(datadir, "e65_count_matrix.csv"),
-    row.names = 1,
-    check.names = FALSE
-  )
+
+# 1) Lees event counts matrix (features/events x cells), 1e kolom = feature
+dt <- fread(file.path(datadir, "e65_count_matrix.csv"), showProgress = TRUE)
+
+feature_ids <- dt[[1]]
+mat <- as.matrix(dt[, -1, with = FALSE])
+rownames(mat) <- feature_ids
+
+# Sparse matrix (scheelt geheugen)
+expression_matrix <- as(mat, "dgCMatrix")
+rm(dt, mat); gc()
+
+# 2) Fix: maak kolomnamen uniek (nodig als er duplicaten in cell IDs zitten)
+dup_n <- sum(duplicated(colnames(expression_matrix)))
+if (dup_n > 0) {
+  message("Let op: ", dup_n, " duplicate cell IDs gevonden in matrixkolommen. Ik maak ze uniek met make.unique().")
+  colnames(expression_matrix) <- make.unique(colnames(expression_matrix))
+}
+
+# (optioneel) Gebruik korte barcodes i.p.v. lange suffixen
+# Zet op TRUE als je alleen "AAACGAT..." wilt; blijft ook uniek gemaakt.
+use_short_barcodes <- TRUE
+if (use_short_barcodes) {
+  short_ids <- sub("_.*$", "", colnames(expression_matrix))
+  colnames(expression_matrix) <- make.unique(short_ids)
+}
+
+# 3) Minimale cell metadata (exact dezelfde IDs als matrixkolommen)
+cell_metadata <- data.frame(row.names = colnames(expression_matrix))
+
+# 4) Gene/event metadata (minimaal; gene_short_name = event ID)
+gene_annotation <- data.frame(
+  gene_short_name = rownames(expression_matrix),
+  row.names = rownames(expression_matrix),
+  stringsAsFactors = FALSE
 )
 
-# 2) metadata
-gene_annotation <- read.csv(gzfile(file.path(datadir, "e65_feature_metadata.csv.gz")))
-cell_metadata <- read.csv(file.path(datadir, "e65_sample_metadata.csv"))
+# 5) Maak CDS
+stopifnot(identical(rownames(cell_metadata), colnames(expression_matrix)))
 
-# 3) rownames zetten
-rownames(gene_annotation) <- gene_annotation[[1]]
-gene_annotation$gene_short_name <- gene_annotation[[1]]
-
-orig_ids <- cell_metadata[[1]]                 # kolom met E6.5-1_i1/...bam
-sample   <- sub("/.*$", "", orig_ids)
-clean_id <- sub("\\.bam$", "", gsub("^.*/", "", orig_ids))
-clean_ids <- paste0(sample, "_", clean_id)
-
-# zet consistent in beide
-colnames(expression_matrix) <- cell_ids
-rownames(cell_metadata) <- cell_ids
-
-# 5) maak cds
 cds <- new_cell_data_set(
-  expression_matrix,
-  cell_metadata = cell_metadata,
-  gene_metadata = gene_annotation[rownames(expression_matrix), , drop = FALSE]
+  expression_data = expression_matrix,
+  cell_metadata  = cell_metadata,
+  gene_metadata  = gene_annotation
 )
 
 ```
@@ -100,6 +107,10 @@ In figuur 2 liggen de clusters erg dicht op elkaar. De UMAP kan ook zo worden we
 ```{r dimentionaliteit verlagen en cellen visualiseren figuur 3, results='hide', fig.cap="UMAP: Het gen Tenm3-intron wordt weergegeven in de mate dat het voorkomt in de clusters."}
 plot_cells(cds, genes=c("Tenm3-intron"))
 ```
+```{r dimentionaliteit verlagen en cellen visualiseren figuur 4, results='hide', fig.cap="UMAP:"}
+cds <- reduce_dimension(cds, reduction_method = "UMAP")
+```
+
 
 # Groepeer cellen in clusters
 
@@ -116,7 +127,7 @@ plot_cells(cds)
 Wanneer je alle cellen opdeelt in clusters, kun je heel veel kleine clusters krijgen. Deze clusters kunnen weer samengevoegd worden in partities. Een partitie kan een celtype zijn, waarbij de clusters bestaan uit specifieke celtoestanden. In figuur 9 is een UMAP zichtbaar waarbij de cellen opgedeeld zijn in partities.
 
 ```{r cellen clusteren figuur 9, results='hide', fig.cap="UMAP: clusters gevormd op basis van partities. Elke cluster is weergegeven met een kleur en een cijfer."}
-plot_cells(cds, color_cells_by="feature_type")
+plot_cells(cds, color_cells_by="cluster")
 ```
 
 De figuren kunnen zo gemaakt worden dat de cellen worden gekleurd op basis van cluster of partitie. Ook kan het getal vervangen worden door de naam van deze cluster of partitie.
@@ -142,7 +153,7 @@ top_specific_marker_ids <- unique(top_specific_markers %>% pull(gene_id)) # uniq
 ```{r expressie markergenen zoeken figuur 10, results='hide', fig.cap="Dotplot: Op de x-as staan de partitions en op de y-as staan de genen. De grootte van de dot geeft aan wat het percentage is van dit gen in de partitie. De kleur van de dot geeft aan hoe sterk het gen tot expressie komt."}
 plot_genes_by_group(cds,
                     top_specific_marker_ids,
-                    group_cells_by="partition",
+                    group_cells_by="cluster",
                     ordering_type="maximal_on_diag",
                     max.size=3)
 ```
