@@ -197,7 +197,7 @@ cluster0.markers <- FindMarkers(e75, ident.1 = 0, logfc.threshold = 0.25, test.u
 table(Idents(e75_seuratobject))
 ```
 
-```{r Clusterbiomarkers Figure 9, fig.cap="ViolinPlot: Het expressielevel van het gen MS4A1 wordt per cluster weergegeven. In cluster 3 komt dit gen het meest tot expressie."}
+```{r Clusterbiomarkers Figure 9, fig.cap="ViolinPlot: Het expressielevel van het gen Tenm3_intron wordt per cluster weergegeven. In cluster 3 komt dit gen het meest tot expressie."}
 VlnPlot(e75, features = c("Tenm3-intron"))
 ```
 
