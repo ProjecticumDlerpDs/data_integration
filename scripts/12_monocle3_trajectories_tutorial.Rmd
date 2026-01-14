@@ -10,7 +10,19 @@ Trajectanalyse in Monocle3 wordt gebruikt om te beschrijven hoe cellen zich door
 
 ## Het contrueren van trajectories van single-cells
 
-```{r setup}
+```{r setup, include=FALSE}
+#Benodigde packages openen
+library(monocle3)
+
+# Globale knitr-instellingen
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  fig.pos = "H",
+  fig.show = "hold"
+)
+
 expression_matrix <- readRDS(url("https://depts.washington.edu:/trapnell-lab/software/monocle3/celegans/data/packer_embryo_expression.rds"))
 cell_metadata <- readRDS(url("https://depts.washington.edu:/trapnell-lab/software/monocle3/celegans/data/packer_embryo_colData.rds"))
 gene_annotation <- readRDS(url("https://depts.washington.edu:/trapnell-lab/software/monocle3/celegans/data/packer_embryo_rowData.rds"))
@@ -22,25 +34,31 @@ cds <- new_cell_data_set(expression_matrix,
 
 ## Gegevens vooraf verwerken
 
-```{r }
+```{r gegevens vooraf verwerken}
 cds <- preprocess_cds(cds, num_dim = 50)
 cds <- align_cds(cds, alignment_group = "batch", residual_model_formula_str = "~ bg.300.loading + bg.400.loading + bg.500.1.loading + bg.500.2.loading + bg.r17.loading + bg.b01.loading + bg.b02.loading")
 ```
 
 ## Verminder de dimensionaliteit en visualiseer de resultaten
 
-```{r }
+```{r Dimentionaliteit verminderen voorbewerking figuur 1}
 cds <- reduce_dimension(cds)
+```
+
+```{r Dimentionaliteit verminderen figuur 1, results='hide', fig.cap=""}
 plot_cells(cds, label_groups_by_cluster=FALSE,  color_cells_by = "cell.type")
 ```
-```{r}
+
+```{r resultaten visualiseren voorbewerking figuur 2}
 ciliated_genes <- c("che-1",
                     "hlh-17",
                     "nhr-6",
                     "dmd-6",
                     "ceh-36",
                     "ham-1")
+```
 
+```{r resultaten visualiseren figuur 2, results='hide', fig.cap=""}
 plot_cells(cds,
            genes=ciliated_genes,
            label_cell_groups=FALSE,
@@ -50,15 +68,21 @@ plot_cells(cds,
 
 ## Groepeer je cellen
 
-```{r}
+```{r cellen groeperen voorbewerking figuur 3}
 cds <- cluster_cells(cds)
+```
+
+```{r cellen groeperen figuur 3, results='hide', fig.cap=""}
 plot_cells(cds, color_cells_by = "partition")
 ```
 
 ## Leer de trajectgrafiek kennen
 
-```{r }
+```{r trajectgrafiek leren kennen voorbewerking figuur 4, results='hide'}
 cds <- learn_graph(cds)
+```
+
+```{r trajectgrafiek leren kennen figuur 4}
 plot_cells(cds,
            color_cells_by = "cell.type",
            label_groups_by_cluster=FALSE,
@@ -68,7 +92,7 @@ plot_cells(cds,
 
 ## Orden de cellen in pseudotijd
 
-```{r }
+```{r pseudotijd figuur 5, results='hide'}
 plot_cells(cds,
            color_cells_by = "embryo.time.bin",
            label_cell_groups=FALSE,
@@ -78,16 +102,16 @@ plot_cells(cds,
 ```
 
 ```{r }
-cds <- order_cells(cds)
+#cds <- order_cells(cds)
 ```
 
 ```{r }
-plot_cells(cds,
-           color_cells_by = "pseudotime",
-           label_cell_groups=FALSE,
-           label_leaves=FALSE,
-           label_branch_points=FALSE,
-           graph_label_size=1.5)
+#plot_cells(cds,
+           #color_cells_by = "pseudotime",
+           #label_cell_groups=FALSE,
+           #label_leaves=FALSE,
+           #label_branch_points=FALSE,
+           #graph_label_size=1.5)
 ```
 
 ```{r}
@@ -107,7 +131,7 @@ get_earliest_principal_node <- function(cds, time_bin="130-170"){
 cds <- order_cells(cds, root_pr_nodes=get_earliest_principal_node(cds))
 ```
 
-```{r}
+```{r, results='hide'}
 plot_cells(cds,
            color_cells_by = "pseudotime",
            label_cell_groups=FALSE,
@@ -119,12 +143,12 @@ plot_cells(cds,
 ## Selecteer cellen op basis van vertakking
 
 ```{r}
-cds_sub <- choose_graph_segments(cds)
+#cds_sub <- choose_graph_segments(cds)
 ```
 
 ## Werken met 3D-tratories
 
-```{r}
+```{r, results='hide'}
 cds_3d <- reduce_dimension(cds, max_components = 3)
 cds_3d <- cluster_cells(cds_3d)
 cds_3d <- learn_graph(cds_3d)
