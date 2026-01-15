@@ -71,17 +71,23 @@ data_integration
 │   ├── e95_sample_metadata.csv
 │   └── pbmc3k_filtered_gene_bc_matrices.tar
 └── scripts
-    ├── 01_Seurat_tutorial.Rmd
-    ├── 01_Seurat_tutorial.pdf
+    ├── 01_seurat_tutorial.Rmd
+    ├── 01_seurat_tutorial.pdf
     ├── 02_seurat_data_integration_tutorial.Rmd
     ├── 02_seurat_data_integration_tutorial.pdf
-    ├── 03_06_5_data_omzetten_van_csv_naar_mtx.R
-    ├── 03_6_5_data_laden.Rmd
-    ├── 03_6_5_data_laden.pdf
-    ├── 04_07_5_data_omzetten_van_csv_naar_mtx.R
-    ├── 05_08_5_data_omzetten_van_csv_naar_mtx.R
-    ├── 06_09_5_data_omzetten_van_csv_naar_mtx.R
-    └── 07_data_omzetten_van_csv_naar_mtx.R
+    ├── 03_e6.5_data_omzetten_van_csv_naar_mtx.R
+    ├── 04_e7.5_data_omzetten_van_csv_naar_mtx.R
+    ├── 05_e8.5_data_omzetten_van_csv_naar_mtx.R
+    ├── 06_e9.5_data_omzetten_van_csv_naar_mtx.R
+    ├── 07_data_omzetten_van_csv_naar_mtx.R
+    ├── 08_e6.5_data_laden.Rmd
+    ├── 08_e6.5_data_laden.pdf
+    ├── 09_e7.5_data_laden.Rmd
+    ├── 10_monocle3_clusteren_tutorial.Rmd
+    ├── 10_monocle3_clusteren_tutorial.pdf
+    ├── 11_monocle3_clusteren_e6.5.Rmd
+    ├── 12_monocle3_trajectories_tutorial.Rmd
+    └── 12_monocle3_trajectories_tutorial.pdf
 ```
 
 ---
