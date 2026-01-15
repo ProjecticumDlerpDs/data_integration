@@ -18,7 +18,7 @@ library(monocle3)    # Laadt het monocle3-pakket voor single-cell RNA-seq analys
 knitr::opts_chunk$set( # Stelt globale opties in voor alle knitr code chunks in het document
   echo = FALSE,        # Zorgt ervoor dat de R-code zelf niet wordt weergegeven in de output
   message = FALSE,     # Onderdrukt informatieve berichten die door R worden gegenereerd
-  warning = FALSE,     # Onderdrukt waarschuwingen in de output
+  warning = FALSE,     # Onderdrukt waarschuwingen tijdens het uitvoeren van chunks
   fig.pos = "H",       # Forceert figuren om exact op de plek in de tekst te verschijnen
   fig.show = "hold"    # Bundelt meerdere figuren en toont ze samen na het uitvoeren van de chunk
 )
