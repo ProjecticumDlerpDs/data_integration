@@ -104,6 +104,9 @@ De volgende packages zijn gedurende het project gebruikt:
 - ggplot2
 - cowplot
 - Matrix
+- monocle3
+- data.table
+- Matrix
 
 ---
 
