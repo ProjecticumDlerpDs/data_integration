@@ -1,51 +1,100 @@
-# Data science project: Data_Integration
+# Data science project: Reconstructie van celontwikkelingsroutes in muizenembryo's
 
-Een data science project voor de analyse van data integratie van scRNA-seq data van muizen embryo cellen.
+Dit project richt zich op het reconstrueren van ontwikkelingsroutes (*trajectory-analyse*) in muizenembryo’s op basis van single-cell RNA-sequencingdata. Met behulp van Seurat en Monocle3 worden celclusters geïdentificeerd en geordend langs pseudotime om ontwikkelingsdynamiek inzichtelijk te maken.
 
 Dit project valt onder de voorwaarden van de MIT-licentie.
 
----
+------------------------------------------------------------------------
 
 ## Beschrijving
 
-Het doel van dit project is om een pipeline te schrijven voor het analyseren van VASA-seqencing data met data integratie. Om de data integratie uit te kunnen voeren wordt er gebruik gemaakt van de package Seurat binnen Rstudio. In deze githup repository zullen alle scripts en data worden opgeslagen. Niet alle data wordt op deze githup opgeslagen in verband met de grootte van deze bestanden, in de .gitignore file zijn de mappen te vinden die niet op github worden opgeslagen. 
+Tijdens de embryonale ontwikkeling ondergaan cellen complexe differentiatieprocessen waarbij zij zich ontwikkelen tot gespecialiseerde celtypen. Om deze processen beter te begrijpen, wordt in dit project gebruikgemaakt van single-cell RNA-sequencingdata afkomstig van muizenembryo’s op embryonale dagen E6.5, E7.5, E8.5 en E9.5.
 
----
+De dataset is gegenereerd met VASA-seq, een methode die het totale RNA-profiel van individuele cellen vastlegt. Hierdoor kan een completer beeld worden verkregen van genexpressie tijdens vroege ontwikkeling.
+
+De analyse wordt uitgevoerd in R met behulp van:
+
+-   **Seurat** voor data preprocessing, normalisatie en clustering
+
+-   **Monocle3** voor trajectory-analyse en reconstructie van pseudotime
+
+Het doel is om ontwikkelingsroutes te identificeren en te onderzoeken hoe de in Seurat gevonden clusters zich verhouden tot de trajectstructuur die met Monocle3 wordt gereconstrueerd.
+
+In deze githup repository zullen alle scripts en data worden opgeslagen. Niet alle data wordt op deze githup opgeslagen in verband met de grootte van deze bestanden, in de .gitignore file zijn de mappen te vinden die niet op github worden opgeslagen.
+
+------------------------------------------------------------------------
 
 ## Workflow
 
-Deelvraag 1: Hoe werkt Seurat?
-Bestanden: 01_seurat_tutorial.Rmd, 01_seurat_tutorial.pdf
+De workflow van dit project bestaat uit de volgende stappen.
 
-Deelvraag 2: Hoe moeten de csv-bestanden omgezet worden in mtx-bestanden?
-Bestanden: 03_06_5_data_omzetten_van_csv_naar_mtx.R, 04_07_5_data_omzetten_van_csv_naar_mtx.R, 05_08_5_data_omzetten_van_csv_naar_mtx.R, 06_09_5_data_omzetten_van_csv_naar_mtx.R, 07_data_omzetten_van_csv_naar_mtx.R
+Data import -\> Kwaliteitscontrole -\> Normalisatie & feature selectie -\> Dimensiereductie & clustering (Seurat) -\> Concersie naar Monocle 3 -\> Trajectory analyse -\> Interpretatie
 
-Deelvraag 3: Hoe moet de dataset geïnspecteerd worden?
+### Data Import
 
-Deelvraag 4: Hoe moet de dataset opgeschoond worden?
+-   Inlezen van single-cell RNA-sequencingdata
+-   Aanmaken van een Seurat object
 
-Deelvraag 5: Hoe moet de dataset genormaliseerd worden?
+### Kwaliteitscontrole
 
-Deelvraag 6: Hoe moet de kwaliteitscontrole worden uitgevoerd op de dataset?
+-   Filtering van lage kwaliteit cellen
+-   Verwijderen van outliers (bijv. hoge mitochondrial RNA expressie)
 
-Deelvraag 7: Hoe voeg ik mijn data samen?
+### Normalisatie & Feature Selectie
 
-Deelvraag 8: Hoe werkt het monocle 3 programma?
+-   Normaliseren van de data
+-   Identificeren van hoog-variabele genen
 
-Deelvraag 9: Hoe sluit de data van Seurat aan op monocle 3?
+### Dimensiereductie & Clustering (Seurat)
 
-Hoofdvraag: Kan met behulp van Seurat uitgezocht worden waar alle clusters uit zijn ontstaan binnen de single cell sequences van muizenembryo's?
+-   PCA uitvoeren
+-   UMAP/t-SNE visualisatie
+-   Clustering van cellen
 
----
+### Conversie naar Monocle3
+
+-   Omzetten van Seurat object naar Monocle3 object
+-   Constructie van een celtraject
+
+### Trajectory Analyse
+
+-   Berekenen van pseudotime
+-   Identificeren van vertakkingen
+-   Visualisatie van ontwikkelingsroutes
+
+### Interpretatie
+
+-   Vergelijken van clusters met pseudotime-structuur
+-   Identificeren van differentieel tot expressie komende genen langs het traject
+
+------------------------------------------------------------------------
+
+## Deelvragen
+
+Deelvraag 1: Hoe kan de kwaliteit van de VASA-seq single-cell data worden beoordeeld?
+
+Deelvraag 2: Welke celpopulaties en clusters kunnen worden geïdentificeerd binnen de dataset via Seurat?
+
+Deelvraag 3: Welke genen zijn karakteristiek voor de verschillende clusters?
+
+Deelvraag 4: Hoe kunnen deze clusters worden geïntegreerd in een ontwikkelingscontinuüm met behulp van Monocle 3?
+
+Deelvraag 5: Welke belangrijke ontwikkelingsroutes worden zichtbaar tussen E6.5 en E9.5?
+
+Deelvraag 6: In hoeverre komen de Seurat-clusters overeen met de pseudotime-braches van Monocle 3?
+
+Hoofdvraag: Welke ontwikkelingsroutes (pseudotime-trajecten) kunnen worden geïdentificeerd in muizenembryo’s tussen E6.5 en E9.5 op basis van single-cell RNA-sequencingdata, en hoe verhouden de in Seurat geïdentificeerde clusters zich tot de trajectstructuur die met Monocle 3 wordt gereconstrueerd?
+
+------------------------------------------------------------------------
 
 ## Project structuur
 
-```ruby
+``` ruby
 install.packages("fs")
 fs::dir_tree(path = ".", recurse = 1)
 ```
 
-```
+```         
 data_integration
 ├── LICENSE
 ├── README.html
@@ -90,33 +139,33 @@ data_integration
     └── 12_monocle3_trajectories_tutorial.pdf
 ```
 
----
+------------------------------------------------------------------------
 
 ## Setup
 
 De volgende packages zijn gedurende het project gebruikt:
 
-- dplyr
-- Seurat
-- patchwork
-- here
-- SeuratData
-- ggplot2
-- cowplot
-- Matrix
-- monocle3
-- data.table
-- Matrix
+-   dplyr
+-   Seurat
+-   patchwork
+-   here
+-   SeuratData
+-   ggplot2
+-   cowplot
+-   Matrix
+-   monocle3
+-   data.table
+-   Matrix
 
----
+------------------------------------------------------------------------
 
 ## Originele data
 
-De originele data komt uit het artikel: High-throughput total RNA sequencing in single cells using VASA-seq. 
+De originele data komt uit het artikel: High-throughput total RNA sequencing in single cells using VASA-seq.
 
-doi: https://doi.org/10.1038/s41587-022-01361-8
+doi: <https://doi.org/10.1038/s41587-022-01361-8>
 
----
+------------------------------------------------------------------------
 
 ## Contactgegevens
 
@@ -124,4 +173,4 @@ Bij vragen en opmerkingen kunt u terecht bij:
 
 Naam: Petra Molenaar
 
-e-mail: petra.molenaar@student.hu.nl
+e-mail: [petra.molenaar\@student.hu.nl](mailto:petra.molenaar@student.hu.nl){.email}
