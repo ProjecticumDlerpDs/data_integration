@@ -7,21 +7,34 @@ output:
     df_print: paged
   word_document: default
 date: "`r Sys.Date()`"
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
 # Deelvraag: Hoe kan Seurat worden gebruikt om single-cell RNA-seq data te verwerken, analyseren en interpreteren om verschillende celpopulaties te identificeren?
 
 # Methode
-Voor deze analyse is er gebruik gemaakt van het Seurat-pakket in R, een veelgebruikt hulpmiddel voor de analyse van single-cell RNA-seq data. De tutorial die is gevolgd is te vinden op de volgende site:  https://satijalab.org/seurat/articles/pbmc3k_tutorial. Als voorbeeld werd een publieke dataset van 2.700 perifere bloed mononucleaire cellen (PBMC’s) gebruikt, gegenereerd met het 10X Genomics-platform. De ruwe data kan gevonden worden op deze site: https://cf.10xgenomics.com/samples/cell/pbmc3k/pbmc3k_filtered_gene_bc_matrices.tar.gz.
 
-De analyse bestaat uit een vaste workflow:
-- kwaliteitscontrole en filtering van cellen
-- normalisatie en selectie van informatieve genen
-- dimensiereductie en clustering van cellen
-- identificatie van cluster-specifieke genexpressie
-- biologische interpretatie en annotatie van clusters
+Voor deze analyse is er gebruikgemaakt van het Seurat-pakket in R, een
+veelgebruikt hulpmiddel voor de analyse van single-cell RNA-seq data. De
+workflow is gebaseerd op de officiële Seurat-tutorial, deze is
+beschikbaar via de volgende site:
+<https://satijalab.org/seurat/articles/pbmc3k_tutorial>. Als voorbeeld
+werd een publieke dataset gebruikt bestaande uit 2.700 perifere bloed
+mononucleaire cellen (PBMC’s) gebruikt, gegenereerd met het 10X
+Genomics-platform. De sequencing is uitgevoerd op een Illumina NextSeq
+500 en de ruwe data is beschikbaar via de volgende site:
+<https://cf.10xgenomics.com/samples/cell/pbmc3k/pbmc3k_filtered_gene_bc_matrices.tar.gz>.
 
-Elke stap is uitgevoerd volgens de officiële Seurat-tutorial en dient om technische ruis te verminderen en biologische variatie zichtbaar te maken.
+De analyse bestaat uit een vaste workflow: - kwaliteitscontrole en
+filtering van cellen - normalisatie en selectie van informatieve genen -
+dimensiereductie en clustering van cellen - identificatie van
+cluster-specifieke genexpressie - biologische interpretatie en annotatie
+van clusters
+
+Deze stappen zijn bedoeld om technische ruis te verminderen en
+biologische variatie tussen cellen inzichtelijk te maken.
 
 ```{r setup, include=FALSE}
 # Benodigde packages openen
@@ -48,10 +61,34 @@ if (!tinytex::is_tinytex()) { # Controleert of TinyTeX al geïnstalleerd is
 # Resultaten:
 
 ## Kwaliteitscontrole en filtering
-In Figure 1 worden de features, counts en percentage mitochondria weergegeven. In figure 2 wordt de data van figure 1 tegen elkaar uitgezet in een scatterplot. De kwaliteitscontrole laat zien dat er een licht negatieve correlatie is van -0.13 tussen mitochondriaal RNA en het totale RNA binnen de PBMC's. Ook is er een sterke positieve correlatie van 0.95 tussen het aantal unieke genen en het totale RNA binnen de PBMC's, dit geeft aan dat cellen met meer RNA ook meer unieke genen bevat. Van de features blijven tussen de 200 en 2500 over. Van de mitochodria blijft onder de 5% over, daarboven is de cel waarschijnlijk van slechte kwaliteit of is deze stervende. 
+
+In Figure 1 worden de features, counts en percentage mitochondria
+weergegeven. In figure 2 wordt de data van figure 1 tegen elkaar
+uitgezet in een scatterplot. De kwaliteitscontrole laat zien dat er een
+licht negatieve correlatie is van -0.13 tussen mitochondriaal RNA en het
+totale RNA binnen de PBMC's. Ook is er een sterke positieve correlatie
+van 0.95 tussen het aantal unieke genen en het totale RNA binnen de
+PBMC's, dit geeft aan dat cellen met meer RNA ook meer unieke genen
+bevat. Van de features blijven tussen de 200 en 2500 over. Van de
+mitochodria blijft onder de 5% over, daarboven is de cel waarschijnlijk
+van slechte kwaliteit of is deze stervende.
 
 ```{r QC and selecting cells, include=FALSE}
-pbmc.data <- Read10X(data.dir =here("raw_data/pbmc3k_filtered_gene_bc_matrices.tar/hg19/"))            # Leest 10X Genomics single-cell data in vanuit de opgegeven directory (bestandslocatie)
+URL <- "https://cf.10xgenomics.com/samples/cell/pbmc3k/pbmc3k_filtered_gene_bc_matrices.tar.gz"  # Link naar de PBMC 3k dataset van de 10x Genomics website
+
+base_dir <- path.expand("~/data_integration/raw_data")  # Zet de home directory (~) om naar het volledige pad op de computer. Dit zorgt ervoor dat het script op verschillende computers kan werken
+
+dir.create(base_dir, recursive = TRUE, showWarnings = FALSE) # Maak de map 'raw_data' aan als deze nog niet bestaat. Recursive = TRUE maakt ook bovenliggende mappen aan indien nodig
+
+tmp <- tempfile(fileext = ".tar.gz")  # Maak een tijdelijk bestand aan om het .tar.gz bestand op te slaan. Zo blijft de projectmap netjes en worden er geen onnodige bestanden bewaard
+
+download.file(URL, destfile = tmp, mode = "wb")  # Download het gecomprimeerde bestand naar het tijdelijke bestand. mode = "wb" zorgt ervoor dat het bestand correct wordt opgeslagen
+
+untar(tmp, exdir = base_dir)  # Pak het .tar.gz bestand direct uit in de map 'raw_data'.
+
+unlink(tmp) # Verwijder het tijdelijke bestand na het uitpakken, zodat alleen de uitgepakte data overblijft
+
+pbmc.data <- Read10X(data.dir =here("raw_data/filtered_gene_bc_matrices/hg19")) # Leest 10X Genomics single-cell data in vanuit de opgegeven directory (bestandslocatie)
 pbmc <- CreateSeuratObject(counts = pbmc.data, project = "pbmc3k", min.cells = 3, min.features = 200)  # Maakt een Seurat-object aan en filtert genen en cellen op minimale drempels
 pbmc                                                                                                   # Print een overzicht van het Seurat-object en zijn basisstatistieken
 
@@ -88,14 +125,21 @@ pbmc <- subset(pbmc, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent
 ```
 
 ## Normaliseren van de gegevens
-De data wordt genormaliseerd door de totale expressie van elke cel om te zetten naar 10.000 en vervolgens een log-transformatie te nemen (het getal weer kleiner maken). Hierdoor kunnen de getallen per cel met elkaar vergeleken worden.
+
+De data wordt genormaliseerd door de totale expressie van elke cel om te
+zetten naar 10.000 en vervolgens een log-transformatie te nemen (het
+getal weer kleiner maken). Hierdoor kunnen de getallen per cel met
+elkaar vergeleken worden.
 
 ```{r Normaliseren, include=FALSE}
 pbmc <- NormalizeData(pbmc, normalization.method = "LogNormalize", scale.factor = 10000)  # Normaliseert de genexpressie per cel door counts te schalen naar 10.000 en log-getransformeerd op te slaan
 ```
 
 ## Kenmerkselectie
-In Figure 3 zijn de 2000 cellen met de meest variërende kenmerken zijn rood gekleurd en de 10 meest variërende genen worden aangegeven met hun naam.
+
+In Figure 3 zijn de 2000 cellen met de meest variërende kenmerken zijn
+rood gekleurd en de 10 meest variërende genen worden aangegeven met hun
+naam.
 
 ```{r Kenmerkselectie, include=FALSE}
 pbmc <- FindVariableFeatures(pbmc, selection.method = "vst", nfeatures = 2000)  # Selecteert de 2000 meest variabele en tot expressie komende genen voor downstream analyse
@@ -111,7 +155,9 @@ plot2  # Toont de variabele-genenplot met gelabelde top 10 meest variabele genen
 ```
 
 ## De gegevens schalen
-De gemiddelde expressie over de cellen wordt op 0 gesteld, ook wordt de variantie over de cellen op 1 gesteld.
+
+De gemiddelde expressie over de cellen wordt op 0 gesteld, ook wordt de
+variantie over de cellen op 1 gesteld.
 
 ```{r De gegevens schalen, include=FALSE}
 all.genes <- rownames(pbmc)  # Haalt de namen van alle genen uit het Seurat-object op
@@ -119,7 +165,12 @@ pbmc <- ScaleData(pbmc, features = all.genes)  # Schaal en centreert de expressi
 ```
 
 ## Lineaire dimensionale reductie uitvoeren
-Met behulp van principal component analyses (PCA) worden er van de oude variabelen, nieuwe variabelen gemaakt door lineaire combinaties te maken. Hieruit ontstaan enkele hoofdcomponenten (PC's). PC1 dekt het grootste deel van de variatie binnen de data. PC2 dekt daarna het grootste deel, enzovoort. 
+
+Met behulp van principal component analyses (PCA) worden er van de oude
+variabelen, nieuwe variabelen gemaakt door lineaire combinaties te
+maken. Hieruit ontstaan enkele hoofdcomponenten (PC's). PC1 dekt het
+grootste deel van de variatie binnen de data. PC2 dekt daarna het
+grootste deel, enzovoort.
 
 ```{r Lineaire dimensionale reductie uitvoeren, include=FALSE}
 pbmc <- RunPCA(pbmc, features = VariableFeatures(object = pbmc))  # Voert een PCA uit op basis van de geselecteerde variabele genen om de data te reduceren in dimensies
@@ -139,14 +190,29 @@ DimHeatmap(pbmc, dims = 1, cells = 500, balanced = TRUE)  # Toont een heatmap va
 ```
 
 ## Dimensionaliteit
-Om ruis te voorkomen in verdere analyse wordt er gekeken hoeveel PC's meegenomen moeten worden. Hiervoor kan er gebruik gemaakt worden van een elbowplot. In deze plot worden de PC's op de x-as geplaatst en de standaard deviatie op de y-as. Er ontstaat een soort van arm, waarbij de elleboog het keerpunt is. De PC's voor de elleboog worden meegenomen en de PC's na de elleboog worden niet meegenomen. Het verschil tussen de PC's na de elleboog is niet relevant genoeg om mee te nemen. In Figure 7 is de elleboog zichtbaar tussen 9 en 10.
+
+Om ruis te voorkomen in verdere analyse wordt er gekeken hoeveel PC's
+meegenomen moeten worden. Hiervoor kan er gebruik gemaakt worden van een
+elbowplot. In deze plot worden de PC's op de x-as geplaatst en de
+standaard deviatie op de y-as. Er ontstaat een soort van arm, waarbij de
+elleboog het keerpunt is. De PC's voor de elleboog worden meegenomen en
+de PC's na de elleboog worden niet meegenomen. Het verschil tussen de
+PC's na de elleboog is niet relevant genoeg om mee te nemen. In Figure 7
+is de elleboog zichtbaar tussen 9 en 10.
 
 ```{r Dimensionaliteit Figure 7, fig.cap="ElbowPlot: Op de x-as staan de PC's en op de y-as staan de standaard deviatie."}
 ElbowPlot(pbmc)  # Visualiseert hoeveel variantie elke PCA-component verklaart om een geschikt aantal componenten te kiezen
 ```
 
 ## Clusteren
-Nadat de juiste PC’s zijn gekozen (1-10), verdeelt Seurat de cellen in groepen (clusters). Het programma kijkt hiervoor welke cellen het meest op elkaar lijken en verbindt die in een netwerk. Vervolgens zoekt het naar dicht bij elkaar liggende groepjes cellen binnen dat netwerk. Met de resolutie-instelling kun je bepalen of je grotere, bredere groepen of juist kleinere, gedetailleerdere groepen krijgt. In dit geval is er gekozen voor een resolutie van 0.5.
+
+Nadat de juiste PC’s zijn gekozen (1-10), verdeelt Seurat de cellen in
+groepen (clusters). Het programma kijkt hiervoor welke cellen het meest
+op elkaar lijken en verbindt die in een netwerk. Vervolgens zoekt het
+naar dicht bij elkaar liggende groepjes cellen binnen dat netwerk. Met
+de resolutie-instelling kun je bepalen of je grotere, bredere groepen of
+juist kleinere, gedetailleerdere groepen krijgt. In dit geval is er
+gekozen voor een resolutie van 0.5.
 
 ```{r Clusteren, include=FALSE}
 pbmc <- FindNeighbors(pbmc, dims = 1:10)  # Berekent een netwerk van vergelijkbare cellen op basis van de eerste tien PCA-componenten
@@ -155,7 +221,17 @@ head(Idents(pbmc), 5)  # Toont de clusteridentiteiten van de eerste vijf cellen
 ```
 
 ## Niet-lineaire dimensionale reductie uitvoeren (UMAP/tSNE)
-Seurat kan technieken zoals UMAP en tSNE gebruiken om de data overzichtelijk weer te geven in twee dimensies. Deze methoden plaatsen cellen die op elkaar lijken dicht bij elkaar, zodat de eerder gevonden clusters ook zichtbaar worden in de plot. Het is een handig hulpmiddel om patronen in de data te verkennen. Het blijft echter een visualisatie: lokale relaties (cellen die erg op elkaar lijken) worden goed weergegeven, maar de grotere, globale structuur is minder betrouwbaar. Gebruik UMAP of tSNE daarom vooral om een indruk van de data te krijgen, maar niet om er alleen op basis van de plot biologische conclusies te trekken.
+
+Seurat kan technieken zoals UMAP en tSNE gebruiken om de data
+overzichtelijk weer te geven in twee dimensies. Deze methoden plaatsen
+cellen die op elkaar lijken dicht bij elkaar, zodat de eerder gevonden
+clusters ook zichtbaar worden in de plot. Het is een handig hulpmiddel
+om patronen in de data te verkennen. Het blijft echter een visualisatie:
+lokale relaties (cellen die erg op elkaar lijken) worden goed
+weergegeven, maar de grotere, globale structuur is minder betrouwbaar.
+Gebruik UMAP of tSNE daarom vooral om een indruk van de data te krijgen,
+maar niet om er alleen op basis van de plot biologische conclusies te
+trekken.
 
 ```{r Niet-lineaire dimensionale reductie uitvoeren, include=FALSE}
 pbmc <- RunUMAP(pbmc, dims = 1:10)  # Past UMAP toe om cellen te projecteren in een lage-dimensionale ruimte op basis van de eerste tien PCA-componenten
@@ -166,7 +242,10 @@ DimPlot(pbmc, reduction = "umap")  # Visualiseert de cellen in UMAP-ruimte waarb
 ```
 
 ## Het vinden van differentieel tot expressie gebrachte kenmerken (clusterbiomarkers)
-Vervolgens kunnen er voor elke cluster genen gezocht worden die duidelijk meer (of minder) tot expressie komen dan in andere cellen. Dit helpt om te bepalen welke genen een cluster kenmerken.
+
+Vervolgens kunnen er voor elke cluster genen gezocht worden die
+duidelijk meer (of minder) tot expressie komen dan in andere cellen. Dit
+helpt om te bepalen welke genen een cluster kenmerken.
 
 ```{r Clusterbiomarkers, include=FALSE}
 cluster2.markers <- FindMarkers(pbmc, ident.1 = 2)  # Identificeert genen die differentieel tot expressie komen in cluster 2 ten opzichte van alle andere cellen
@@ -198,6 +277,7 @@ DoHeatmap(pbmc, features = top10$gene) + NoLegend()  # Visualiseert de expressie
 ```
 
 ## Toewijzen van celtype-identiteit aan clusters
+
 Als laatste stap worden er bekende celtypen gekoppeld aan de clusters.
 
 ```{r Toewijzen van celtype-identiteit aan clusters, include=FALSE}
