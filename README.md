@@ -136,4 +136,4 @@ Bij vragen en opmerkingen kunt u terecht bij:
 
 Naam: Petra Molenaar
 
-e-mail: [petra.molenaar\@student.hu.nl](mailto:petra.molenaar@student.hu.nl){.email}
+e-mail: [petra.molenaar\@student.hu.nl](mailto:petra.molenaar@student.hu.nl)
