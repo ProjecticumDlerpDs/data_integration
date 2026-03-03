@@ -118,7 +118,6 @@ De volgende packages zijn gedurende het project gebruikt:
 -   Matrix
 -   monocle3
 -   data.table
--   Matrix
 
 ------------------------------------------------------------------------
 
