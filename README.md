@@ -28,46 +28,9 @@ In deze githup repository zullen alle scripts en data worden opgeslagen. Niet al
 
 De workflow van dit project bestaat uit de volgende stappen.
 
-Data import -\> Kwaliteitscontrole -\> Normalisatie & feature selectie -\> Dimensiereductie & clustering (Seurat) -\> Concersie naar Monocle 3 -\> Trajectory analyse -\> Interpretatie
+![](images/clipboard-1405115087.png)
 
-### Data Import
-
--   Inlezen van single-cell RNA-sequencingdata
--   Aanmaken van een Seurat object
-
-### Kwaliteitscontrole
-
--   Filtering van lage kwaliteit cellen
--   Verwijderen van outliers (bijv. hoge mitochondrial RNA expressie)
-
-### Normalisatie & Feature Selectie
-
--   Normaliseren van de data
--   Identificeren van hoog-variabele genen
-
-### Dimensiereductie & Clustering (Seurat)
-
--   PCA uitvoeren
--   UMAP/t-SNE visualisatie
--   Clustering van cellen
-
-### Conversie naar Monocle3
-
--   Omzetten van Seurat object naar Monocle3 object
--   Constructie van een celtraject
-
-### Trajectory Analyse
-
--   Berekenen van pseudotime
--   Identificeren van vertakkingen
--   Visualisatie van ontwikkelingsroutes
-
-### Interpretatie
-
--   Vergelijken van clusters met pseudotime-structuur
--   Identificeren van differentieel tot expressie komende genen langs het traject
-
-------------------------------------------------------------------------
+### 
 
 ## Deelvragen
 
