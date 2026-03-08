@@ -1,12 +1,53 @@
 ---
 title: "10_monocle3_clusteren_tutorial"
-output: pdf_document
-date: "2025-12-28"
+output: 
+  pdf_document:
+    extra_dependencies: ["float", "ragged2e"] 
+  html_document:
+    df_print: paged
+  word_document: default
+date: "`r Sys.Date()`"
+editor_options: 
+  markdown: 
+    wrap: 72
 ---
 
-# Het groeperen en classificeren van de cellen
+# Deelvraag: Hoe kan het Monocle3 pakket worden gebruikt om single-cell RNA-seq data te clusteren en verschillende celtypen te identificeren?
 
-De tutorial die is gevolgd is te vinden op de volgende site: <https://cole-trapnell-lab.github.io/monocle3/docs/clustering/>. De dataset die gebruikt wordt voor deze tutorial bestaat uit sci-RNA-seq (single cell RNA-seq with combinatorial indexing) data van de C. elegans uit het artikel van [Cao & Packer et al](https://www.science.org/doi/10.1126/science.aam8940).
+# Methode
+
+Voor deze analyse is gebruikgemaakt van het Monocle3 pakket in R, een
+tool die speciaal is ontwikkeld voor de analyse van single-cell
+RNA-sequencing data. Monocle3 wordt gebruikt voor onder andere:
+
+-   dimensionale reductie
+-   clustering van cellen
+-   identificatie van markergenen
+-   annotatie van celtypen
+
+De workflow is gebaseerd op de officiële Monocle3 tutorial die
+beschikbaar is via:
+<https://cole-trapnell-lab.github.io/monocle3/docs/clustering/>
+
+Als voorbeeld wordt een dataset gebruikt bestaande uit sci-RNA-seq
+(single-cell combinatorial indexing RNA sequencing) data van de *C.
+elegans*. Deze dataset is afkomstig uit het artikel van [Cao & Packer et
+al](https://www.science.org/doi/10.1126/science.aam8940). en is
+gepubliceerd in Comprehensive single‑cell transcriptional profiling of a
+multicellular organism.
+
+De analyse bestaat uit de volgende stappen:
+
+-   inladen van de dataset
+-   voorbewerking en normalisatie
+-   dimensionale reductie
+-   clustering van cellen
+-   batch-effect correctie
+-   identificatie van markergenen
+-   annotatie van celtypen
+
+Deze stappen maken het mogelijk om biologische variatie tussen cellen
+zichtbaar te maken en verschillende celpopulaties te identificeren.
 
 ```{r monocle3 installeren, include=FALSE}
 options(repos = c(CRAN = "https://cloud.r-project.org"))
@@ -43,161 +84,196 @@ cds <- new_cell_data_set(expression_matrix,
                          gene_metadata = gene_annotation)
 ```
 
-# Verwerk de gegevens vooraf
+# Resultaten
 
-Wanneer de data geladen is en alle benodigde packages zijn geïnstalleerd, is de volgende stap om de data voor te bewerken. Dit is een stap waarbij je aangeeft hoe je de data wilt normaliseren, welke dementiereductiemethode je wilt gebruiken en hoe je eventuele batch-effecten wilt verwijderen. In figuur 1 is een elbowplot weergegeven met op de x-as de PCA components (PC's) en op de y-as de variantie. Een elboowplot laat zien hoeveel variantie elke PC toevoegt. Het punt waar de "elleboog" het duidelijkst zichtbaar is, geeft een geschikt aantal PC's aan.
+## Voorbewerking van de data
+
+Na het laden van de dataset wordt de data eerst voorbewerkt. Tijdens
+deze stap worden de genexpressiewaarden genormaliseerd en wordt een
+dimensionale reductie uitgevoerd met behulp van Principal Component
+Analysis (PCA).
+
+In figuur 1 is een elbowplot weergegeven waarin de variantie van de
+eerste 100 principal components (PC’s) wordt weergegeven. Deze plot
+helpt bij het bepalen van het aantal dimensies dat gebruikt wordt voor
+verdere analyse. In deze plot staat op de x-as het aantal principal
+components (PC’s) en op de y-as de hoeveelheid variantie die door elke
+component wordt verklaard. Het punt waar de curve een duidelijke knik
+vertoont geeft een geschikt aantal componenten aan.
 
 ```{r voorbewerking, results='hide'}
 cds <- preprocess_cds(cds, num_dim = 100)
 ```
 
-```{r voorbewerking figuur 1, results='hide', fig.cap="Elbowplot: Op de x-as zijn 100 PCA components (PC's) weergegeven, op de y-as is de variantie van de PC's weergegeven. "}
+```{r voorbewerking figuur 1, results='hide', fig.cap="Figuur 1: Elbowplot van de principal component analyse (PCA). Op de x-as staan de eerste 100 principal components (PC's) en op de y-as staat de hoeveelheid verklaarde variantie per component. De knik in de grafiek geeft een indicatie van het aantal dimensies dat geschikt is voor verdere analyse."}
 plot_pc_variance_explained(cds)
 ```
 
-# Verlaag de dimensionaliteit en visualiseer de cellen
+## Dimensionale reductie en visualisatie
 
-De voorbewerking is klaar, nu kunnen de cellen gevisualieerd worden met behulp van een Uniform Manifold Approximation and Projection (UMAP). Een UMAP is een techniek voor dimensionale reductie. Het zet complexe biologische informatie om in een overzichtelijk figuur. Elke cel wordt weergeven als een stipje. De positie van de cel wordt gebaseerd op de genen die actief zijn binnen de cel. In figuur 2 is een UMAP weergegeven waarbij alle cellen een positie hebben gekregen.
+Na de voorbewerking kan de dataset worden gevisualiseerd met behulp van
+UMAP (Uniform Manifold Approximation and Projection).
+
+UMAP is een methode voor dimensionale reductie waarbij complexe
+genexpressiepatronen worden geprojecteerd naar een tweedimensionale
+ruimte. In figuur 2 is een UMAP-visualisatie weergegeven waarin elke
+stip een individuele cel representeert. Cellen met vergelijkbare
+genexpressie liggen dicht bij elkaar in de plot.
 
 ```{r dimentionaliteit verlagen en cellen visualiseren voorbewerking figuur 2, include=FALSE}
 cds <- reduce_dimension(cds)
 ```
 
-```{r dimentionaliteit verlagen en cellen visualiseren figuur 2, results='hide', fig.cap="UMAP: Cellen hebben een positie gekregen."}
+```{r dimentionaliteit verlagen en cellen visualiseren figuur 2, results='hide', fig.cap="Figuur 2: UMAP-visualisatie van alle cellen in de dataset. Elke stip representeert een individuele cel en de positie van de stip is gebaseerd op het genexpressieprofiel van de cel."}
 plot_cells(cds)
 ```
 
-Cellen, waarvan de actieve genen op elkaar lijken, zullen dicht bij elkaar gaan liggen (clusteren). Deze clusters kunnen verschillende celtypen of toestanden zijn. Wanneer een cluster overgaat in een andere cluster kunnen dit differentierende cellen zijn. In figuur 3 zijn de clusters aangegeven met verschillende kleuren, en zijn de namen erbij gezet. De namen van deze clusters zijn handmatig uitgezocht door Cao & Packer.
+## Visualisatie van bekende celtypen
 
-```{r dimentionaliteit verlagen en cellen visualiseren figuur 3, results='hide', fig.cap="UMAP: Clusters worden weergegeven met een kleur en een naam."}
+In figuur 3 worden de cellen weergegeven en ingekleurd op basis van het
+bekende celtype dat door Cao & Packer is bepaald.
+
+```{r dimentionaliteit verlagen en cellen visualiseren figuur 3, results='hide', fig.cap="Figuur 3: UMAP-visualisatie waarbij cellen zijn gekleurd op basis van het celtype dat in de originele dataset is geannoteerd door Cao & Packer."}
 plot_cells(cds, color_cells_by="cao_cell_type")
 ```
 
-In figuur 3 liggen de clusters erg dicht op elkaar. De UMAP kan ook zo worden weergegeven dat een enkel gen weergegeven wordt, en ook in welke mate deze aanwezig is. In figuur 4 wordt zo'n UMAP weergegeven. De genen cpna-2, egl-21, ram-2 en inos-1 worden elk weergegeven.
+## Visualisatie van genexpressie
 
-```{r dimentionaliteit verlagen en cellen visualiseren figuur 4, results='hide', fig.cap="UMAP: De genen cpna-2, egl-21, ram-2 en inos-1 worden elk weergegeven in de mate dat ze voorkomen."}
+UMAP plots kunnen ook gebruikt worden om de expressie van specifieke
+genen te visualiseren. In figuur 4 wordt de expressie van vier genen
+weergegeven (cpna-2, egl-21, ram-2 en inos-1). De intensiteit van de
+kleur geeft aan in welke mate een gen tot expressie komt in een cel.
+
+```{r dimentionaliteit verlagen en cellen visualiseren figuur 4, results='hide', fig.cap="Figuur 4: UMAP-visualisatie van de expressie van vier genen (cpna-2, egl-21, ram-2 en inos-1). De kleurintensiteit geeft de mate van genexpressie weer in individuele cellen."}
 plot_cells(cds, genes=c("cpna-2", "egl-21", "ram-2", "inos-1"))
 ```
 
-Een andere techniek die gebruikt kan worden is t-distributed Stochastic Neighbor Embedding (tSNE). Deze techniek is vooral gefocust op het laten zien van duidelijke clusters. Het grote verchil tussen tSNE en UMAP is dat de afstand tussen de cellen bij UMAP zegt hoeveel de cellen van elkaar verschillen en bij tSNE zegt de afstand niet zoveel. Hierdoor kunnen de gegenereerde plaatjes ook steeds veranderen bij tSNE. In figuur 5 is een voorbeeld van een tSNE plot waarbij de clusters een kleur en een naam hebben gekregen.
+## Batch-effect correctie
 
-```{r dimentionaliteit verlagen en cellen visualiseren voorbewerking figuur 5, include=FALSE}
-cds <- reduce_dimension(cds, reduction_method="tSNE")
-```
+Bij grootschalige single-cell experimenten worden samples vaak verwerkt
+in meerdere experimentele batches. Dit kan technische verschillen
+veroorzaken.
 
-```{r dimentionaliteit verlagen en cellen visualiseren figuur 5, results='hide', fig.cap="tSNE: Clusters worden weergegeven met een kleur en een naam."}
-plot_cells(cds, reduction_method="tSNE", color_cells_by="cao_cell_type")
-```
+Om deze verschillen te corrigeren gebruikt Monocle3 een methode
+gebaseerd op mutual nearest neighbour alignment.
 
-# Controleer op en verwijder batch-effecten
-
-Tijdens het uitvoeren van experimenten waarbij heel veel samples gebruikt worden, worden de experimenten opgedeeld. Hierdoor ontstaan een hoop verschillen. De expirimenten worden uitgevoerd op verschillende dagen, op en met verschillende apparatuur, door verschillende analisten of zelfs met verschillende muizen. Dit zijn allemaal vormen van batch-verschillen. Om de data met elkaar te kunnen vergelijken moeten deze batch-verschillen worden verwijderd. In figuur 6 worden de verschillende platen die gebruikt zijn weergegeven door elke cel de kleur te geven van de plaat waar deze cel van afkomstig is. Hiermee wordt zichtbaar gemaakt of er duidelijke verschillen zijn tussen de platen, bijvoorbeeld als er een aparte cluster ontstaat van één kleur.
-
-```{r batch-effecten figuur 6, results='hide', fig.cap="UMAP: De cellen zijn gekleurd op bais van de plaat waar ze van afkomstig zijn."}
-plot_cells(cds, color_cells_by="plate", label_cell_groups=FALSE)
-```
-
-Met behulp van [wederzijdse uitlijning van dichtsbijzijnde buren](https://www.nature.com/articles/nbt.4091) worden eventuele batch-effecten verwijderd. Dit is een techniek die is geïntroduceerd door het lab van John Marioni, en binnen Monocle3 wordt er gebruikt gemaakt van Aaron Lun's package genaamd [batchelor](https://bioconductor.org/packages/release/bioc/html/batchelor.html). In figuur 7 zijn deze batch-effecten verwijderd.
+Na deze correctie liggen cellen uit verschillende batches beter
+overlappend in de UMAP-ruimte, wat aangeeft dat technische variatie is
+verminderd.
 
 ```{r batch-effecten, include=FALSE}
 cds <- align_cds(cds, num_dim = 100, alignment_group = "plate")
 cds <- reduce_dimension(cds)
 ```
 
-```{r batch-effecten figuur 7, results='hide', fig.cap="UMAP: De cellen zijn gekleurd op basis van de plaat waar ze van afkomstig zijn. In dit figuur zijn de batch-effecten gecorrigieerd."}
-plot_cells(cds, color_cells_by="plate", label_cell_groups=FALSE)
-```
+## Clustering van cellen
 
-# Groepeer cellen in clusters
+Cellen worden vervolgens gegroepeerd in clusters met behulp van een
+[community
+detection](https://www.nature.com/articles/s41598-019-41695-z)
+algoritme. Na het uitvoeren van het clustering algoritme worden de
+cellen gegroepeerd in clusters op basis van vergelijkbare genexpressie.
+In figuur 5 zijn deze clusters weergegeven.
 
-De cellen moeten worden gegroepeerd in clusters, hiervoor maakt monocle3 gebruik van een techniek genaamd [community detection](https://www.nature.com/articles/s41598-019-41695-z). In figuur 8 is een UMAP weergegeven op basis van clusters.
-
-```{r cellen clusteren voorbewerking figuur 8, include=FALSE}
+```{r cellen clusteren voorbewerking figuur 5, include=FALSE}
 cds <- cluster_cells(cds, resolution=1e-5)
 ```
 
-```{r cellen clusteren figuur 8, results='hide', fig.cap="UMAP: clusters gevormd op basis van resolutie. Elke cluster is weergegeven met een kleur en een cijfer."}
+```{r cellen clusteren figuur 5, results='hide', fig.cap="Figuur 5: UMAP-visualisatie van de geclusterde cellen. Elke kleur representeert een cluster van cellen met vergelijkbare genexpressieprofielen."}
 plot_cells(cds)
 ```
 
-Wanneer je alle cellen opdeelt in clusters, kun je heel veel kleine clusters krijgen. Deze clusters kunnen weer samengevoegd worden in partities. Een partitie kan een celtype zijn, waarbij de clusters bestaan uit specifieke celtoestanden. In figuur 9 is een UMAP zichtbaar waarbij de cellen opgedeeld zijn in partities.
+## Identificatie van markergenen
 
-```{r cellen clusteren figuur 9, results='hide', fig.cap="UMAP: clusters gevormd op basis van partities. Elke cluster is weergegeven met een kleur en een cijfer."}
-plot_cells(cds, color_cells_by="partition", group_cells_by="partition")
-```
+Om de clusters biologisch te interpreteren worden markergenen
+geïdentificeerd. Dit zijn genen die sterk tot expressie komen in een
+specifieke cluster.
 
-De figuren kunnen zo gemaakt worden dat de cellen worden gekleurd op basis van cluster of partitie. Ook kan het getal vervangen worden door de naam van deze cluster of partitie.
-
-# Zoek markergenen die door elk cluster tot expressie worden gebracht
-
-Zodra de cellen zijn geclusterd kan er gekeken worden naar wat het verschil is in genen tussen de partities. Hiervoor wordt er gekeken naar de genen die het meest tot expressie komen. In figuur 10 is een Dotplot weergegeven waarin zichtbaar is gemaakt welk gen het meest tot expressie komt per partitie. Op de x-as staan de verschillende partities en op de y-as staan de verschillende genen. De grootte van de dot geeft aan wat het percentage is van dit gen in de partitie. De kleur van de dot geeft aan hoe sterk het gen tot expressie komt.
-
-Het kan nodig zijn om naar meerdere genen te kijken binnen een partitie. Het figuur kan dan ook aangepast worden door bijvoorbeeld de top 3 genen weer te geven.
-
-```{r expressie markergenen zoeken voorbewerking figuur 10, include=FALSE}
+```{r expressie markergenen zoeken voorbewerking figuur 6, include=FALSE}
 marker_test_res <- top_markers(cds,                            # cds = CellDataSet, is specifiek voor monocle3
                                group_cells_by="partition",     # group_cells_by="partition" vergelijkt genexpressie tussen partitions
                                reference_cells=1000)           # reference_cells=1000 geeft aan dat er een referentieset van maximaal 1000 cellen gebruikt wordt
-
-top_specific_markers <- marker_test_res %>%
-                            filter(fraction_expressing >= 0.10) %>% # Gooit zeldzame/ruisachtige genen weg die maar in heel weinig cellen voorkomen
-                            group_by(cell_group) %>%                # De cellen worden gegroepeerd bij cell_group (partition)
-                            top_n(1, pseudo_R2)                     # Per partition wordt het gen gekozen met de hoogste pseudo_R2 score (de hoogste specificiteit)
-
-top_specific_marker_ids <- unique(top_specific_markers %>% pull(gene_id)) # unique maakt de gene_id's uniek zodat er geen overlap is
 ```
 
-```{r expressie markergenen zoeken figuur 10, results='hide', fig.cap="Dotplot: Op de x-as staan de partitions en op de y-as staan de genen. De grootte van de dot geeft aan wat het percentage is van dit gen in de partitie. De kleur van de dot geeft aan hoe sterk het gen tot expressie komt."}
-plot_genes_by_group(cds,
-                    top_specific_marker_ids,
-                    group_cells_by="partition",
-                    ordering_type="maximal_on_diag",
-                    max.size=3)
-```
+Deze genen kunnen vervolgens worden weergegeven in een dotplot waarin\
+zichtbaar is:
 
-# Voorzie de cellen van een annotatie op basis van het type
+-   hoe sterk een gen tot expressie komt
+-   in hoeveel cellen het gen voorkomt
 
-Nu de clusters gemaakt zijn en de topgenen bekend zijn, kan er gekeken worden wat het celtype van de cluster is. Hiervoor hebben de auteurs van Cao & Packer in de literatuur gekeken en elke cluster een naam gegeven. Nu kunnen deze namen worden toegewezenaan de clusters, door de getallen van de clusters te vervangen door de juiste namen. Dit proces is erg bewerkelijk en hier kunnen dan ook fouten in optreden. Zo kunnen de namen op de verkeerde plek neergezet worden of kan er een typfout gemaakt worden.
+## Annotatie van celtypen
 
-```{r cellen voorzien van annotatie op basis van het type voorbewerking figuur 11, include=FALSE}
+Op basis van de geïdentificeerde markergenen en literatuur kunnen
+clusters worden geannoteerd met een biologisch celtype.\
+Op basis van literatuur en de annotatie uit de originele studie van Cao
+& Packer werden de geïdentificeerde partities vervolgens geannoteerd met
+bijbehorende celtypen.
+
+```{r annotatie celtypen, include=FALSE}
 colData(cds)$assigned_cell_type <- as.character(partitions(cds))
-colData(cds)$assigned_cell_type <- dplyr::recode(colData(cds)$assigned_cell_type, # De partition cijfers worden hier vervangen door de nieuwe namen
-                                                 "1"="Body wall muscle",
-                                                 "2"="Germline",
-                                                 "3"="Motor neurons",
-                                                 "4"="Seam cells",
-                                                 "5"="Sex myoblasts",
-                                                 "6"="Socket cells",
-                                                 "7"="Marginal_cell",
-                                                 "8"="Coelomocyte",
-                                                 "9"="Am/PH sheath cells",
-                                                 "10"="Ciliated neurons",
-                                                 "11"="Intestinal/rectal muscle",
-                                                 "12"="Excretory gland",
-                                                 "13"="Chemosensory neurons",
-                                                 "14"="Interneurons",
-                                                 "15"="Unclassified eurons",
-                                                 "16"="Ciliated neurons",
-                                                 "17"="Pharyngeal gland cells",
-                                                 "18"="Unclassified neurons",
-                                                 "19"="Chemosensory neurons",
-                                                 "20"="Ciliated neurons",
-                                                 "21"="Ciliated neurons",
-                                                 "22"="Inner labial neuron",
-                                                 "23"="Ciliated neurons",
-                                                 "24"="Ciliated neurons",
-                                                 "25"="Ciliated neurons",
-                                                 "26"="Hypodermal cells",
-                                                 "27"="Mesodermal cells",
-                                                 "28"="Motor neurons",
-                                                 "29"="Pharyngeal gland cells",
-                                                 "30"="Ciliated neurons",
-                                                 "31"="Excretory cells",
-                                                 "32"="Amphid neuron",
-                                                 "33"="Pharyngeal muscle")
+
+colData(cds)$assigned_cell_type <- dplyr::recode(
+  colData(cds)$assigned_cell_type,
+  "1"="Body wall muscle",
+  "2"="Germline",
+  "3"="Motor neurons",
+  "4"="Seam cells",
+  "5"="Sex myoblasts",
+  "6"="Socket cells",
+  "7"="Marginal_cell",
+  "8"="Coelomocyte",
+  "9"="Am/PH sheath cells",
+  "10"="Ciliated neurons",
+  "11"="Intestinal/rectal muscle",
+  "12"="Excretory gland",
+  "13"="Chemosensory neurons",
+  "14"="Interneurons",
+  "15"="Unclassified neurons",
+  "16"="Ciliated neurons",
+  "17"="Pharyngeal gland cells",
+  "18"="Unclassified neurons",
+  "19"="Chemosensory neurons",
+  "20"="Ciliated neurons",
+  "21"="Ciliated neurons",
+  "22"="Inner labial neuron",
+  "23"="Ciliated neurons",
+  "24"="Ciliated neurons",
+  "25"="Ciliated neurons",
+  "26"="Hypodermal cells",
+  "27"="Mesodermal cells",
+  "28"="Motor neurons",
+  "29"="Pharyngeal gland cells",
+  "30"="Ciliated neurons",
+  "31"="Excretory cells",
+  "32"="Amphid neuron",
+  "33"="Pharyngeal muscle"
+)
 ```
 
-```{r cellen voorzien van annotatie op basis van het type figuur 11, results='hide', fig.cap="UMAP: De partitions zijn aangegeven met een kleur en een naam. De cijfers van de partitions zijn nu vervangen door de juiste namen."}
+In figuur 6 zijn de clusters weergegeven met hun toegewezen celtypen.
+
+```{r cellen voorzien van annotatie op basis van het type figuur 6, results='hide', fig.cap="Figuur 6: UMAP-visualisatie van de clusters waarbij de cellen zijn ingekleurd op basis van het geannoteerde celtype."}
 plot_cells(cds, group_cells_by="partition", color_cells_by="assigned_cell_type")
 ```
 
+# Conclusie
+
+In deze analyse is het Monocle3 pakket gebruikt om single-cell
+RNA-sequencing data van *C. elegans* te verwerken en te analyseren. Door
+middel van voorbewerking, dimensionale reductie en clustering konden
+individuele cellen worden gegroepeerd op basis van hun
+genexpressieprofiel. Met behulp van UMAP-visualisaties werden
+verschillende clusters van cellen zichtbaar, waarbij cellen met
+vergelijkbare genexpressie dicht bij elkaar lagen. Vervolgens konden
+markergenen worden geïdentificeerd die kenmerkend zijn voor specifieke
+clusters.
+
+Daarnaast werd batch-effect correctie toegepast om technische
+verschillen tussen experimentele batches te verminderen. Hierdoor werd
+de biologische variatie tussen cellen duidelijker zichtbaar. Op basis
+van de geïdentificeerde markergenen konden de clusters uiteindelijk
+worden geannoteerd met bijbehorende celtypen.
+
+Hiermee kan worden geconcludeerd dat Monocle3 effectief kan worden
+gebruikt om single-cell RNA-seq data te clusteren en verschillende
+celtypen te identificeren.
