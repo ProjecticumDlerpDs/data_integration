@@ -1,0 +1,159 @@
+---
+title: "13_monocle3_trajectories_tutorial"
+output: pdf_document
+date: "2026-01-10"
+---
+
+# Deelvraag: Hoe maak je trajectories in Monocle3?
+
+Trajectanalyse in Monocle3 wordt gebruikt om te beschrijven hoe cellen zich door een biologisch proces bewegen, bijvoorbeeld tijdens differentiatie. In plaats van cellen in vaste groepen in te delen, probeert Monocle3 de onderliggende volgorde van veranderingen in genexpressie te reconstrueren. Het doel is om cellen te positioneren langs een continu pas (een traject) en zo inzicht te krijgen in overgangstoestanden en mogelijke vertakkingen. 
+
+## Het contrueren van trajectories van single-cells
+
+```{r setup, include=FALSE}
+# Benodigde packages openen
+library(monocle3)    # Laadt het monocle3-pakket voor single-cell RNA-seq analyse en trajectinference
+
+# Globale knitr-instellingen
+knitr::opts_chunk$set( # Stelt globale opties in voor alle knitr code chunks in het document
+  echo = FALSE,        # Zorgt ervoor dat de R-code zelf niet wordt weergegeven in de output
+  message = FALSE,     # Onderdrukt informatieve berichten die door R worden gegenereerd
+  warning = FALSE,     # Onderdrukt waarschuwingen tijdens het uitvoeren van chunks
+  fig.pos = "H",       # Forceert figuren om exact op de plek in de tekst te verschijnen
+  fig.show = "hold"    # Bundelt meerdere figuren en toont ze samen na het uitvoeren van de chunk
+)
+
+expression_matrix <- readRDS(url("https://depts.washington.edu:/trapnell-lab/software/monocle3/celegans/data/packer_embryo_expression.rds")) # Laadt de genexpressiematrix van het C. elegans embryo vanuit een online RDS-bestand
+cell_metadata <- readRDS(url("https://depts.washington.edu:/trapnell-lab/software/monocle3/celegans/data/packer_embryo_colData.rds")) # Laadt metadata over de cellen (zoals celtype of tijdstip) vanuit een online RDS-bestand
+gene_annotation <- readRDS(url("https://depts.washington.edu:/trapnell-lab/software/monocle3/celegans/data/packer_embryo_rowData.rds")) # Laadt annotatie-informatie over de genen vanuit een online RDS-bestand
+
+cds <- new_cell_data_set(expression_matrix,
+                         cell_metadata = cell_metadata,
+                         gene_metadata = gene_annotation) # Maakt een nieuw CellDataSet-object (cds) aan waarin expressiedata, celmetadata en genannotaties worden gecombineerd
+```
+
+## Gegevens vooraf verwerken
+
+```{r gegevens vooraf verwerken}
+cds <- preprocess_cds(cds, num_dim = 50) # Voert preprocessing uit op het cds-object en reduceert de data naar 50 dimensies
+cds <- align_cds(cds, alignment_group = "batch", # Corrigeert voor batch-effecten door cellen uit verschillende batches op elkaar af te stemmen
+                 residual_model_formula_str = "~ bg.300.loading + bg.400.loading + bg.500.1.loading + bg.500.2.loading + bg.r17.loading + bg.b01.loading + bg.b02.loading") # Verwijdert variatie die verklaard wordt door achtergrond- en technische covariaten via een residueel model
+```
+
+## Verminder de dimensionaliteit en visualiseer de resultaten
+
+```{r Dimentionaliteit verminderen voorbewerking figuur 1}
+cds <- reduce_dimension(cds) # Reduceert de hoge-dimensionale expressiedata naar een lage-dimensionale ruimte voor visualisatie en clustering
+```
+
+```{r Dimentionaliteit verminderen figuur 1, results='hide', fig.cap=""}
+plot_cells(cds, label_groups_by_cluster=FALSE,  color_cells_by = "cell.type") # Visualiseert de cellen in de gereduceerde dimensieruimte en kleurt ze op basis van hun celtype zonder clusterlabels te tonen
+```
+
+```{r resultaten visualiseren voorbewerking figuur 2}
+ciliated_genes <- c("che-1",
+                    "hlh-17",
+                    "nhr-6",
+                    "dmd-6",
+                    "ceh-36",
+                    "ham-1") # Definieert een vector met genen die geassocieerd zijn met gecilieerde cellen
+```
+
+```{r resultaten visualiseren figuur 2, results='hide', fig.cap=""}
+plot_cells(cds,
+           genes=ciliated_genes,
+           label_cell_groups=FALSE,
+           show_trajectory_graph=FALSE) # Visualiseert de expressie van de geselecteerde ciliated_genes per cel zonder groepslabels of trajectgrafiek te tonen
+```
+
+## Groepeer je cellen
+
+```{r cellen groeperen voorbewerking figuur 3}
+cds <- cluster_cells(cds) # Groepeert cellen in clusters op basis van hun gelijkenis in de gereduceerde dimensieruimte
+```
+
+```{r cellen groeperen figuur 3, results='hide', fig.cap=""}
+plot_cells(cds, color_cells_by = "partition") # Visualiseert de cellen en kleurt ze op basis van hun toegewezen partitie
+```
+
+## Leer de trajectgrafiek kennen
+
+```{r trajectgrafiek leren kennen voorbewerking figuur 4, results='hide'}
+cds <- learn_graph(cds) # Maakt een traject dat laat zien hoe cellen zich van elkaar ontwikkelen
+```
+
+```{r trajectgrafiek leren kennen figuur 4}
+plot_cells(cds,
+           color_cells_by = "cell.type",
+           label_groups_by_cluster=FALSE,
+           label_leaves=FALSE,
+           label_branch_points=FALSE) # Visualiseert de cellen langs het traject, gekleurd per celtype, zonder clusters, eindpunten of vertakkingen te labelen
+```
+
+## Orden de cellen in pseudotijd
+
+```{r pseudotijd figuur 5, results='hide'}
+plot_cells(cds,
+           color_cells_by = "embryo.time.bin",
+           label_cell_groups=FALSE,
+           label_leaves=TRUE,
+           label_branch_points=TRUE,
+           graph_label_size=1.5) # Visualiseert de cellen langs het traject, gekleurd per embryonaal tijdsinterval, met labels voor eindpunten en vertakkingen
+```
+
+```{r }
+#cds <- order_cells(cds) # Bepaalt de volgorde van cellen langs het ontwikkelingspad
+```
+
+```{r }
+#plot_cells(cds,
+           #color_cells_by = "pseudotime",
+           #label_cell_groups=FALSE,
+           #label_leaves=FALSE,
+           #label_branch_points=FALSE,
+           #graph_label_size=1.5) # Visualiseert de cellen langs het traject en kleurt ze op basis van pseudotijd zonder extra labels te tonen
+```
+
+```{r}
+# a helper function to identify the root principal points:
+get_earliest_principal_node <- function(cds, time_bin="130-170"){       # Definieert een functie die het meest waarschijnlijke beginpunt (root-node) kiest op basis van een vroeg tijdsinterval
+  cell_ids <- which(colData(cds)[, "embryo.time.bin"] == time_bin)      # Selecteert de cellen die in de gekozen embryo-tijd-bin vallen
+  
+  closest_vertex <-                                                     # Maakt een variabele aan om de dichtstbijzijnde vertex (knoop) per cel op te slaan
+  cds@principal_graph_aux[["UMAP"]]$pr_graph_cell_proj_closest_vertex   # Haalt per cel de dichtstbijzijnde principal graph node (in UMAP) op
+  closest_vertex <- as.matrix(closest_vertex[colnames(cds), ])          # Zet dit om naar een matrix in dezelfde celvolgorde als het cds-object
+  
+  root_pr_nodes <-                                                      # Bepaalt welke principal node het meest voorkomt bij de geselecteerde (vroege) cellen
+  igraph::V(principal_graph(cds)[["UMAP"]])$name[as.numeric(names       # Neemt de naam van de node die hoort bij de meest voorkomende dichtstbijzijnde vertex
+  (which.max(table(closest_vertex[cell_ids,]))))]                       # Telt per node hoe vaak die het dichtstbij is en kiest de maximum
+  
+  root_pr_nodes                                                         # Geeft de gekozen beginpunt (root-node) terug
+}
+cds <- order_cells(cds, root_pr_nodes=get_earliest_principal_node(cds)) # Ordent de cellen in pseudotijd met de gevonden beginpunt (root-node) als startpunt
+```
+
+```{r, results='hide'}
+plot_cells(cds,
+           color_cells_by = "pseudotime",
+           label_cell_groups=FALSE,
+           label_leaves=FALSE,
+           label_branch_points=FALSE,
+           graph_label_size=1.5) # Visualiseert de cellen langs het ontwikkelingspad, gekleurd op basis van pseudotijd, zonder extra labels
+```
+
+## Selecteer cellen op basis van vertakking
+
+```{r}
+#cds_sub <- choose_graph_segments(cds) # Selecteert specifieke segmenten van het ontwikkelingspad voor verdere analyse
+```
+
+## Werken met 3D-tratories
+
+```{r, results='hide'}
+cds_3d <- reduce_dimension(cds, max_components = 3)                            # Reduceert de data naar drie dimensies voor 3D-visualisatie
+cds_3d <- cluster_cells(cds_3d)                                                # Groepeert de cellen in clusters op basis van de 3D-representatie
+cds_3d <- learn_graph(cds_3d)                                                  # Maakt een ontwikkelingspad op basis van de 3D-data
+cds_3d <- order_cells(cds_3d, root_pr_nodes=get_earliest_principal_node(cds))  # Ordent de cellen in pseudotijd vanaf het gevonden beginpunt (root-node)
+
+cds_3d_plot_obj <- plot_cells_3d(cds_3d, color_cells_by="partition")           # Maakt een 3D-visualisatie van de cellen, gekleurd per partitie
+```
