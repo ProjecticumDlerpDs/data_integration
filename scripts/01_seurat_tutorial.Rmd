@@ -48,8 +48,7 @@ knitr::opts_chunk$set(        # Stelt globale opties in voor alle knitr code chu
   echo = FALSE,               # Zorgt ervoor dat de R-code zelf niet wordt weergegeven in de output
   message = FALSE,            # Onderdrukt informatieve berichten die door R worden gegenereerd
   warning = FALSE,            # Onderdrukt waarschuwingen tijdens het uitvoeren van chunks
-  fig.pos = "H",              # Forceert figuren om exact op de plek in de tekst te verschijnen
-  fig.show = "hold"           # Bundelt meerdere figuren en toont ze samen na het uitvoeren van de chunk
+  fig.pos = "H"              # Forceert figuren om exact op de plek in de tekst te verschijnen
 )
 
 # (optioneel) TinyTeX installeren
@@ -289,3 +288,44 @@ pbmc <- RenameIdents(pbmc, new.cluster.ids)  # Hernoemt de clusters in het Seura
 ```{r Toewijzen van celtype-identiteit aan clusters Figure 12, fig.cap="DimPlot: Op de x-as staat umap_1 en op de y-as staat umap_2. De clusters zijn aangegeven met verschillende kleuren en in de clusters staan de celtype namen van de desbetreffende cluster."}
 DimPlot(pbmc, reduction = "umap", label = TRUE, pt.size = 0.5) + NoLegend()  # Visualiseert de UMAP-embedding met gelabelde clusters en kleinere punten zonder legenda
 ```
+
+## Conclusie en discussie
+
+In deze analyse is aangetoond dat het Seurat-pakket effectief kan worden
+gebruikt voor het verwerken, analyseren en interpreteren van single-cell
+RNA-seq data. Door middel van een gestandaardiseerde workflow (bestaande
+uit kwaliteitscontrole, normalisatie, dimensiereductie, clustering en
+markeranalyse) konden verschillende celpopulaties binnen de PBMC-dataset
+succesvol worden geïdentificeerd.
+
+De kwaliteitscontrole liet zien dat filtering op basis van het aantal
+genen per cel en het percentage mitochondriale genexpressie essentieel
+is om ruis en slechte kwaliteit cellen te verwijderen. Vervolgens zorgde
+normalisatie ervoor dat expressiewaarden tussen cellen vergelijkbaar
+werden gemaakt. Door selectie van variabele genen en toepassing van PCA
+werd de dimensie van de dataset gereduceerd, waarbij de belangrijkste
+bronnen van variatie behouden bleven.
+
+De clusteringanalyse, gebaseerd op de eerste tien principal components,
+resulteerde in duidelijk gescheiden clusters zoals zichtbaar in de
+UMAP-visualisatie (zie figuur 8 en 12). Deze clusters konden biologisch
+geïnterpreteerd worden door middel van differentiële
+genexpressieanalyse. Bekende marker genen, zoals *MS4A1* voor B-cellen,
+bevestigden dat de clusters overeenkomen met verwachte immuunceltypen
+zoals T-cellen, monocyten, NK-cellen en dendritische cellen.
+
+Hoewel de resultaten biologisch plausibel zijn, zijn er enkele
+beperkingen. Ten eerste is de keuze van parameters, zoals het aantal
+PC’s en de clusteringresolutie, deels subjectief en kan deze de uitkomst
+beïnvloeden. Daarnaast zijn technieken zoals UMAP vooral bedoeld voor
+visualisatie en geven ze niet altijd een volledig betrouwbaar beeld van
+de globale structuur van de data. Verder is de annotatie van celtypen
+afhankelijk van bekende marker genen en kan dit leiden tot onzekerheid
+bij minder goed gekarakteriseerde celpopulaties.
+
+Samenvattend laat deze studie zien dat Seurat een krachtig en flexibel
+hulpmiddel is voor single-cell RNA-seq analyse. De combinatie van
+statistische methoden en biologische interpretatie maakt het mogelijk om
+complexe heterogeniteit binnen celpopulaties inzichtelijk te maken, mits
+de resultaten kritisch worden geëvalueerd en ondersteund met biologische
+kennis.
