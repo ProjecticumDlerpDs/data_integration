@@ -9,14 +9,19 @@ header-includes:
   - \usepackage{float}
 ---
 
-# Deelvraag: Hoe ziet de single-cell RNA-seq data van muizenembryo’s op tijdspunt E6.5 eruit en welke cellulaire clusters zijn hierin te onderscheiden?
+# Deelvraag: Hoe ziet de single-cell RNA-seq dataset van muizenembryo’s op ontwikkelingsstadium E6.5 eruit en welke cellulaire clusters kunnen op basis van genexpressie worden onderscheiden?
 
 # Methode
+
 Voor deze analyse is er gebruikgemaakt van single-cell RNA-seq data afkomstig van muizenembryo’s op ontwikkelingsstadium E6.5. De data bestaat uit een genexpressiematrix waarin per cel het aantal RNA-moleculen per gen is vastgelegd, aangevuld met metadata over cellen en genen.
 
-Om de kwaliteit van de data te beoordelen, zijn verschillende kwaliteitskenmerken per cel geanalyseerd: het aantal gedetecteerde genen, het totaal aantal RNA-moleculen en het percentage mitochondriaal RNA. Cellen met een extreem laag of hoog aantal genen, of met een verhoogd mitochondriaal RNA-percentage, zijn verwijderd om technische ruis en beschadigde cellen uit te sluiten.
+De analyse is uitgevoerd met het Seurat-pakket in R en omvat de volgende stappen: kwaliteitscontrole, normalisatie, selectie van variabele genen, dimensionale reductie, clustering en identificatie van marker-genen.
 
-Na kwaliteitscontrole is de data genormaliseerd zodat expressiewaarden tussen cellen onderling vergelijkbaar zijn. Vervolgens zijn de meest variabele genen geselecteerd voor verdere analyse, omdat deze genen het meest informatief zijn voor het onderscheiden van celtypen en toestanden.
+Voor de kwaliteitscontrole zijn per cel drie belangrijke kenmerken berekend: het aantal gedetecteerde genen (nFeature_RNA), het totaal aantal RNA-moleculen (nCount_RNA) en het percentage mitochondriaal RNA. Cellen met een extreem laag aantal genen (mogelijk lege druppels), een zeer hoog aantal genen (mogelijke doublets) of een verhoogd mitochondriaal RNA-percentage (indicatief voor beschadigde cellen) zijn verwijderd.
+
+Na filtering is de data genormaliseerd met log-normalisatie, waarbij de totale expressie per cel wordt geschaald naar 10.000 gevolgd door een log-transformatie. Vervolgens zijn de 2000 meest variabele genen geselecteerd, omdat deze het meest bijdragen aan biologische verschillen tussen cellen.
+
+Met behulp van principal component analysis (PCA) is de hoge-dimensionale data gereduceerd tot een beperkt aantal dimensies. Op basis van een elbowplot zijn de eerste tien principal components geselecteerd voor verdere analyse. Deze componenten zijn gebruikt om een buurtnetwerk te construeren, waarop clustering is toegepast. Tot slot zijn de clusters gevisualiseerd met UMAP.
 
 ```{r setup, include=FALSE}
 # Benodigde packages openen
@@ -42,9 +47,20 @@ if (!tinytex::is_tinytex()) {     # Controleert of TinyTeX al geïnstalleerd is
 ```
 
 # Resultaten
-De kwaliteitscontrole laat zien dat het merendeel van de cellen binnen de verwachte biologische variatie valt wat betreft genexpressie en mitochondriaal RNA. Enkele cellen vertonen echter afwijkende waarden, wat kan wijzen op technische afwijkingen of lage celkwaliteit. Deze cellen zijn daarom uitgesloten van verdere analyse.
 
-```{r QC and selecteren van cellen voorbewerking figuur 1, include=FALSE}
+In de volgende sectie worden de resultaten van deze stappen stap voor stap besproken.
+
+## Kwaliteitscontrole en filtering
+
+De kwaliteitscontrole (figuur 1 en 2) laat zien dat de meeste cellen binnen een realistisch bereik vallen voor zowel het aantal genen als het aantal RNA-moleculen per cel. Daarnaast is het percentage mitochondriaal RNA over het algemeen laag, wat wijst op een goede celkwaliteit.
+
+De scatterplots (figuur 2) tonen een sterke positieve correlatie tussen het aantal RNA-moleculen en het aantal gedetecteerde genen, wat biologisch verwacht is. Er is geen sterke relatie tussen mitochondriaal RNA en totale expressie, wat suggereert dat er geen systematische kwaliteitsproblemen aanwezig zijn.
+
+Op basis van deze observaties zijn cellen gefilterd met de volgende criteria: - minimaal 200 en maximaal 4000 genen per cel (verwijderen van lege druppels en doublets) - minder dan 7% mitochondriaal RNA (verwijderen van beschadigde cellen)
+
+Deze filtering zorgt ervoor dat alleen hoogwaardige cellen worden meegenomen in de verdere analyse.
+
+```{r Kwaliteitscontrole en filtering voorbewerking figuur 1, include=FALSE}
 datadir <- "/home/data/projecticum/splicing/data/"    # Slaat het pad op naar de map waar de metadata-bestanden zich bevinden
 
 expression_matrix <- ReadMtx(                                                       # Inlezen van een sparse countmatrix met bijbehorende metadata
@@ -67,7 +83,7 @@ e65[["percent.mt"]] <- PercentageFeatureSet(e65, pattern = "^mt-")              
 Idents(e65) <- "E6.5"                                                               # Stelt voor alle cellen de actieve identiteit in op het label "E6.5"
 ```
 
-```{r QC and selecteren van cellen figuur 1, results='hide', fig.cap="Kwaliteitscontrole van E6.5 single-cell data: Violinplots van (links) het aantal gedetecteerde genen per cel, (midden) het totaal aantal RNA-moleculen per cel en (rechts) het percentage mitochondriaal RNA. Elke stip representeert een individuele cel."}
+```{r Kwaliteitscontrole en filtering figuur 1, results='hide', fig.cap="Kwaliteitscontrole van E6.5 single-cell data: Violinplots van (links) het aantal gedetecteerde genen per cel, (midden) het totaal aantal RNA-moleculen per cel en (rechts) het percentage mitochondriaal RNA. Elke stip representeert een individuele cel."}
 vlnfeature <- VlnPlot(e65, features = "nFeature_RNA") +         # Maakt een violinplot van het aantal gedetecteerde genen per cel
   theme(axis.text.x = element_blank()) +                        # Verbergt de x-as labels
   NoLegend() +                                                  # Verwijdert de legenda uit de plot
@@ -90,22 +106,22 @@ vlnmt <- VlnPlot(e65, features = "percent.mt") +                # Maakt een viol
 vlnfeature | vlncount | vlnmt                                   # Combineert de drie violinplots naast elkaar in één figuur
 ```
 
-```{r QC and selecting cells data inladen voor figuur 2, results='hide'}
-plot1 <- FeatureScatter(e65, feature1 = "nCount_RNA", feature2 = "percent.mt")     # Maakt een scatterplot die laat zien hoe het totaal aantal RNA-tellingen per cel samenhangt met het percentage mitochondriaal RNA
-plot2 <- FeatureScatter(e65, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")   # Maakt een scatterplot die de relatie toont tussen het totaal aantal RNA-tellingen en het aantal gedetecteerde genen per cel
+```{r Kwaliteitscontrole en filtering data inladen voor figuur 2, results='hide'}
+plot1 <- FeatureScatter(e65, feature1 = "nCount_RNA", feature2 = "percent.mt") + (theme(axis.text.y = element_text(size = 6)))     # Maakt een scatterplot die laat zien hoe het totaal aantal RNA-tellingen per cel samenhangt met het percentage mitochondriaal RNA
+plot2 <- FeatureScatter(e65, feature1 = "nCount_RNA", feature2 = "nFeature_RNA") + (theme(axis.text.y = element_text(size = 6)))  # Maakt een scatterplot die de relatie toont tussen het totaal aantal RNA-tellingen en het aantal gedetecteerde genen per cel
 ```
 
-```{r QC and selecting cells figuur 2, fig.cap="Relatie tussen kwaliteitskenmerken per cel: Scatterplots waarin links het percentage mitochondriaal RNA is uitgezet tegen het totaal aantal RNA-moleculen per cel, en rechts het aantal gedetecteerde genen tegen het totaal aantal RNA-moleculen. Elke stip representeert één cel."}
+```{r Kwaliteitscontrole en filtering figuur 2, fig.cap="Relatie tussen kwaliteitskenmerken per cel: Scatterplots waarin links het percentage mitochondriaal RNA is uitgezet tegen het totaal aantal RNA-moleculen per cel, en rechts het aantal gedetecteerde genen tegen het totaal aantal RNA-moleculen. Elke stip representeert één cel."}
 plot1 + plot2  # Toont de twee scatterplots samen in één gecombineerde figuur
 ```
 
-```{r QC and selecting cells subset maken, include=FALSE}
+```{r Kwaliteitscontrole en filtering subset maken, include=FALSE}
 e65 <- subset(e65, subset = nFeature_RNA > 200 & nFeature_RNA < 4000 & percent.mt < 7)   # Filtert het Seurat-object zodat alleen cellen tussen de 200 en 4000 genen en een mitochondriaal percentage onder de 7% overblijven
 ```
 
 ## Normaliseren van de gegevens
 
-De data wordt genormaliseerd door de totale expressie van elke cel om te zetten naar 10.000 en vervolgens een log-transformatie te nemen (het getal weer kleiner maken). Hierdoor kunnen de getallen per cel met elkaar vergeleken worden.
+Na filtering is de data genormaliseerd door de totale expressie per cel te schalen naar 10.000 en vervolgens een log-transformatie toe te passen. Hierdoor worden expressiewaarden tussen cellen onderling vergelijkbaar. Dit zorgt ervoor dat cellen met veel RNA niet automatisch domineren in de analyse.
 
 ```{r Normaliseren, include=FALSE}
 e65 <- NormalizeData(e65, normalization.method = "LogNormalize", scale.factor = 10000)  # Normaliseert de genexpressiewaarden per cel en schaalt ze naar een vaste totale expressie voordat een log-transformatie wordt toegepast
@@ -113,18 +129,18 @@ e65 <- NormalizeData(e65, normalization.method = "LogNormalize", scale.factor = 
 
 ## Kenmerkselectie
 
-Om de belangrijkste biologische variatie in de data te identificeren, zijn de 2000 meest variabele genen geselecteerd. Deze genen dragen het sterkst bij aan verschillen tussen cellen en vormen de basis voor de daaropvolgende dimensionale reductie.
+Vervolgens zijn de 2000 meest variabele genen geselecteerd. Deze genen dragen het sterkst bij aan verschillen tussen cellen en vormen de basis voor verdere analyse.
 
 ```{r Kenmerkselectie, include=FALSE}
 e65 <- FindVariableFeatures(e65, selection.method = "vst", nfeatures = 2000)  # Selecteert de 2000 meest variabele genen die informatief zijn voor verdere analyse
 
-top10 <- head(VariableFeatures(e65), 10)   # Slaat de tien meest variabele genen op
+top5 <- head(VariableFeatures(e65), 5)   # Slaat de vijf meest variabele genen op
 
 plot1 <- VariableFeaturePlot(e65)  # Maakt een plot die de variabiliteit van genen laat zien
-plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)   # Voegt labels toe aan de tien meest variabele genen in de plot zonder overlap van tekst
+plot2 <- LabelPoints(plot = plot1, points = top5, repel = TRUE, size = 3)   # Voegt labels toe aan de vijf meest variabele genen in de plot zonder overlap van tekst
 ```
 
-```{r Kenmerkselectie figuur 3, fig.cap="Selectie van variabele genen: De gemiddelde genexpressie is uitgezet tegen de gestandaardiseerde variantie. De 2000 meest variabele genen zijn rood weergegeven; de tien genen met de hoogste variatie zijn gelabeld."}
+```{r Kenmerkselectie figuur 3, fig.cap="Selectie van variabele genen: De gemiddelde genexpressie is uitgezet tegen de gestandaardiseerde variantie. De 2000 meest variabele genen zijn rood weergegeven; de vijf genen met de hoogste variatie zijn gelabeld."}
 plot2  # Toont de plot met de gelabelde meest variabele genen
 ```
 
@@ -139,7 +155,7 @@ e65 <- ScaleData(e65, features = all.genes)  # Schaalt alle genen zodat ze verge
 
 ## Lineaire dimensionale reductie uitvoeren
 
-Met behulp van principal component analysis (PCA) is de hoge-dimensionale genexpressiedata samengevat in een kleiner aantal hoofdcomponenten, waarbij elke component een deel van de totale variatie in de data beschrijft.
+Met behulp van principal component analysis (PCA) is de hoge-dimensionale genexpressiedata samengevat in een kleiner aantal hoofdcomponenten. Omdat er duizenden genen tegelijk worden gemeten, is de data erg complex. PCA wordt gebruikt om deze complexiteit samen te vatten in een kleiner aantal overzichtelijke componenten die de belangrijkste verschillen tussen cellen weergeven.
 
 ```{r Lineaire dimensionale reductie uitvoeren, include=FALSE}
 e65 <- RunPCA(e65, features = VariableFeatures(object = e65))    # Voert een Principal Component Analysis (PCA) uit op de variabele genen om de belangrijkste variatie in de data te identificeren
@@ -154,13 +170,13 @@ VizDimLoadings(e65, dims = 1, reduction = "pca")  # Visualiseert welke genen het
 DimPlot(e65, reduction = "pca") + NoLegend()  # Maakt een PCA-plot van de cellen en verwijdert de legenda voor een overzichtelijker beeld
 ```
 
-```{r Lineaire dimensionale reductie uitvoeren figuur 6, fig.cap="Heatmap van genexpressie geassocieerd met PC1: Heatmap van genen die bijdragen aan PC1, waarbij rijen genen en kolommen cellen representeren. Paars is een lage PCA-score, geel is een hoge PCA-score. Clusters worden hiermee gevisualiseerd"}
+```{r Lineaire dimensionale reductie uitvoeren figuur 6, fig.cap="Heatmap van genexpressie geassocieerd met PC1: Heatmap van genen die bijdragen aan PC1, waarbij rijen genen en kolommen cellen representeren. Paars is een lage PCA-score, geel is een hoge PCA-score. Deze heatmap laat zien welke genen bijdragen aan de belangrijkste verschillen tussen cellen."}
 DimHeatmap(e65, dims = 1, cells = 454, balanced = TRUE)   # Maakt een heatmap van de expressie van de topgenen die bijdragen aan de eerste principal component, over 454 geselecteerde cellen
 ```
 
 ## Dimensionaliteit
 
-Om ruis te voorkomen in verdere analyse wordt er gekeken hoeveel PC's meegenomen moeten worden. Hiervoor kan er gebruik gemaakt worden van een elbowplot. In deze plot worden de PC's op de x-as geplaatst en de standaard deviatie op de y-as. Er ontstaat een soort van arm, waarbij de elleboog het keerpunt is. De PC's voor de elleboog worden meegenomen en de PC's na de elleboog worden niet meegenomen. Het verschil tussen de PC's na de elleboog is niet relevant genoeg om mee te nemen. In figuur 7 is de elleboog zichtbaar tussen 9 en 10.
+De elbowplot (figuur 7) laat zien dat de grootste bijdrage aan de variantie wordt geleverd door de eerste tien principal components. Daarom zijn deze componenten gebruikt voor verdere analyse.
 
 ```{r Dimensionaliteit figuur 7, fig.cap="Elbowplot voor bepaling van het aantal principal components: De standaarddeviatie van opeenvolgende principal components, waarbij het knikpunt rond PC9–PC10 aangeeft welke componenten informatief zijn voor verdere analyse."}
 ElbowPlot(e65)  # Toont een 'elbow plot' van de standaarddeviaties van de principal components om het aantal relevante PC's te bepalen
@@ -168,7 +184,7 @@ ElbowPlot(e65)  # Toont een 'elbow plot' van de standaarddeviaties van de princi
 
 ## Clusteren
 
-Nadat de juiste PC’s zijn gekozen (1-10), verdeelt Seurat de cellen in groepen (clusters). Het programma kijkt hiervoor welke cellen het meest op elkaar lijken en verbindt die in een netwerk. Vervolgens zoekt het naar dicht bij elkaar liggende groepjes cellen binnen dat netwerk. Met de resolutie-instelling kun je bepalen of je grotere, bredere groepen of juist kleinere, gedetailleerdere groepen krijgt. In dit geval is er gekozen voor een resolutie van 0.5.
+Op basis van de eerste tien principal components zijn cellen geclusterd met behulp van een graf-gebaseerde methode. De gekozen resolutie (0.5) resulteerde in vijf duidelijke clusters.
 
 ```{r Clusteren, include=FALSE}
 e65 <- FindNeighbors(e65, dims = 1:10)       # Berekent de buurtgrafiek van cellen in de ruimte van de eerste 10 principal components
@@ -178,7 +194,7 @@ head(Idents(e65), 5)                         # Toont de clusteridentiteit van de
 
 ## Niet-lineaire dimensionale reductie uitvoeren (UMAP/tSNE)
 
-Op basis van de eerste tien principal components zijn cellen geclusterd om groepen met vergelijkbare genexpressiepatronen te identificeren. Deze clusters zijn vervolgens gevisualiseerd met behulp van UMAP, een niet-lineaire dimensionale reductiemethode.
+Deze clusters zijn gevisualiseerd met behulp van UMAP (figuur 8). De UMAP laat zien dat cellen zich groeperen in goed gescheiden clusters, wat wijst op duidelijke verschillen in genexpressie tussen celpopulaties.
 
 ```{r Niet-lineaire dimensionale reductie uitvoeren, include=FALSE}
 e65 <- RunUMAP(e65, dims = 1:10)   # Voert UMAP uit op de eerste 10 principal components om cellen in een lage-dimensionale ruimte te visualiseren
@@ -190,7 +206,23 @@ DimPlot(e65, reduction = "umap")  # Maakt een UMAP-plot van de cellen om de clus
 
 ## Het vinden van differentieel tot expressie gebrachte kenmerken (clusterbiomarkers)
 
-Om de biologische betekenis van de clusters te onderzoeken, zijn genen geïdentificeerd die specifiek tot expressie komen in individuele clusters. Deze markergenen geven inzicht in mogelijke celtypen of ontwikkelingsstadia.
+Om de biologische betekenis van de clusters te bepalen, zijn de top 5 differentieel tot expressie gebrachte genen per cluster geanalyseerd. Deze genen geven inzicht in de identiteit en functie van de cellen binnen elk cluster.
+
+De resultaten laten zien dat elk cluster een specifiek expressieprofiel heeft dat overeenkomt met bekende celtypen in het E6.5 embryo:
+
+-   Cluster 0 – Primitive streak / nascent mesoderm. Dit cluster wordt gekenmerkt door expressie van genen zoals *Pbx1*, *Aff3* en *Ldb2*, die betrokken zijn bij transcriptieregulatie en vroege differentiatieprocessen. Deze genexpressie past bij cellen in de primitive streak, waar mesodermvorming plaatsvindt.
+
+-   Cluster 1 – Posterior epiblast (mesoderm-competent). Genen zoals *Ndrg2* en *Hmcn1* zijn verhoogd tot expressie in dit cluster. Deze genen worden geassocieerd met prolifererende en differentieerbare epiblastcellen die competent zijn om mesoderm te vormen.
+
+-   Cluster 2 – Visceral endoderm (VE). Dit cluster toont sterke expressie van genen zoals *Dab2*, *Col4a1* en *Amn*, die bekend zijn voor hun rol in endodermale functies zoals extracellulaire matrixvorming en nutriënttransport. Dit bevestigt de identificatie als visceral endoderm.
+
+-   Cluster 3 – Extra-embryonic ectoderm (ExE). De expressie van genen zoals *Elf5* en *Sfmbt2* wijst op extra-embryonale cellen. *Elf5* is een bekende marker voor trophectoderm en extra-embryonale structuren, wat deze annotatie ondersteunt.
+
+Opvallend is dat veel van de geïdentificeerde features intronische reads bevatten (bijv. *Tenm3-intron*, *Aff3-intron*), wat kan wijzen op actieve transcriptie en de aanwezigheid van ongesplicede RNA-moleculen. Dit is gebruikelijk in single-cell RNA-seq datasets en kan aanvullende informatie geven over transcriptiedynamiek.
+
+De combinatie van deze marker-genen en de ruimtelijke scheiding van clusters in de UMAP bevestigt dat de geïdentificeerde clusters overeenkomen met biologisch relevante celtypen binnen het E6.5 embryo.
+
+Deze resultaten komen overeen met bekende literatuur over vroege muisembryogenese, waarin deze celtypen rond E6.5 worden beschreven.
 
 ```{r Clusterbiomarkers, include=FALSE}
 cluster2.markers <- FindMarkers(e65, ident.1 = 2)     # Zoekt genen die specifiek zijn voor cluster 2 ten opzichte van alle andere cellen
@@ -213,16 +245,28 @@ FeaturePlot(e65, features = c("Tenm3-intron"))  # Visualiseert de expressie van 
 e65.markers %>%
     group_by(cluster) %>%
     dplyr::filter(avg_log2FC > 1) %>%
-    slice_head(n = 10) %>%
-    ungroup() -> top10  # Selecteert per cluster de top 10 markers met log2-foldchange groter dan 1 en slaat deze op in 'top10'
+    slice_head(n = 5) %>%
+    ungroup() -> top5  # Selecteert per cluster de top 5 markers met log2-foldchange groter dan 1 en slaat deze op in 'top5'
 ```
 
-```{r Clusterbiomarkers figuur 11, fig.cap="Heatmap van cluster-specifieke markergenen: Heatmap van de tien meest differentieel tot expressie gebrachte genen per cluster, waarbij geel een hoge en paars een lage expressie aanduidt."}
-DoHeatmap(e65, features = top10$gene) + NoLegend()  # Maakt een heatmap van de expressie van de top 10 genen per cluster en verwijdert de legenda voor een overzichtelijker beeld
+```{r Clusterbiomarkers figuur 11, fig.cap="Heatmap van cluster-specifieke markergenen: Heatmap van de vijf meest differentieel tot expressie gebrachte genen per cluster, waarbij geel een hoge en paars een lage expressie aanduidt."}
+DoHeatmap(e65, features = top5$gene) + NoLegend()  # Maakt een heatmap van de expressie van de top 5 genen per cluster en verwijdert de legenda voor een overzichtelijker beeld
+```
+
+```{r Celltypes toekennen, include=FALSE}
+new.cluster.ids <- c("Epiblast", "Primitive streak / early mesoderm", "Visceral endoderm", "Extraembryonic mesoderm / hemato-vasculair", "Primitive erythroid / bloedcellen")
+names(new.cluster.ids) <- levels(e65)
+e65 <- RenameIdents(e65, new.cluster.ids)
+```
+
+```{r Celltypes toekennen figuur 12, fig.cap="UMAP-visualisatie van E6.5 cellen: Projectie van cellen in een tweedimensionale ruimte, waarbij kleuren de verschillende clusters weergeven. Elke stip representeert één cel. De namen van de clusters zijn weergegeven."}
+DimPlot(e65, reduction = "umap", label = TRUE, pt.size = 0.5, label.size = 4, repel = TRUE) + NoLegend()
 ```
 
 # Conclusie
 
-De single-cell RNA-seq data van muizenembryo’s op tijdspunt E6.5 vertoont duidelijke variatie, wat wijst op de aanwezigheid van meerdere celpopulaties. Na kwaliteitscontrole en normalisatie konden verschillende clusters worden onderscheiden op basis van genexpressiepatronen.
+De single-cell RNA-seq analyse van muizenembryo’s op ontwikkelingsstadium E6.5 laat zien dat de dataset bestaat uit meerdere duidelijk te onderscheiden celpopulaties. Na kwaliteitscontrole en filtering konden vijf clusters worden geïdentificeerd, waaronder epiblast, mesoderm, endoderm en extra-embryonale celtypen.
 
-De clustering en markeranalyse suggereren dat deze clusters biologische verschillen weerspiegelen, mogelijk gerelateerd aan verschillende celtypen of ontwikkelingsstadia binnen het embryo. Deze resultaten vormen een basis voor verdere interpretatie en vergelijking met andere tijdspunten in de embryonale ontwikkeling.
+Door middel van markeranalyse zijn deze clusters gekoppeld aan biologisch relevante celtypen, waaronder epiblast, mesoderm, endoderm en bloedgerelateerde cellen. Dit weerspiegelt de complexe cellulaire diversiteit en differentiatieprocessen die plaatsvinden tijdens vroege embryonale ontwikkeling.
+
+De combinatie van clustering en markeranalyse maakt het mogelijk om de structuur van het embryo op cellulair niveau te reconstrueren. Deze resultaten vormen een belangrijke basis voor verdere analyses, zoals het bestuderen van ontwikkelingsroutes en genregulatie tijdens embryogenese.
