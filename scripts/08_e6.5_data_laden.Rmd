@@ -56,7 +56,13 @@ De kwaliteitscontrole (figuur 1 en 2) laat zien dat de meeste cellen binnen een 
 
 De scatterplots (figuur 2) tonen een sterke positieve correlatie tussen het aantal RNA-moleculen en het aantal gedetecteerde genen, wat biologisch verwacht is. Er is geen sterke relatie tussen mitochondriaal RNA en totale expressie, wat suggereert dat er geen systematische kwaliteitsproblemen aanwezig zijn.
 
-Op basis van deze observaties zijn cellen gefilterd met de volgende criteria: - minimaal 200 en maximaal 4000 genen per cel (verwijderen van lege druppels en doublets) - minder dan 7% mitochondriaal RNA (verwijderen van beschadigde cellen)
+Op basis van deze observaties zijn cellen gefilterd met de volgende criteria:
+
+- minimaal 200 en maximaal 4000 genen per cel  
+  Cellen met minder dan 200 of meer dan 4000 gedetecteerde genen zijn verwijderd. Lage waarden kunnen wijzen op lege druppels of cellen van lage kwaliteit, terwijl hoge waarden kunnen duiden op doublets, waarbij meerdere cellen als één cel zijn gemeten. De gekozen drempels zijn gebaseerd op de verdeling van de data en sluiten aan bij gebruikelijke waarden voor single-cell RNA-seq analyse.
+
+- minder dan 7% mitochondriaal RNA  
+  Cellen met een mitochondriaal RNA-percentage hoger dan 7% zijn verwijderd. Deze drempel is gekozen op basis van de kwaliteitscontroleplots, waarin te zien is dat de meeste cellen onder deze waarde vallen. Een iets hogere drempel is passend voor vroege embryonale cellen, waarin relatief meer mitochondriaal RNA kan voorkomen. De gekozen drempel ligt binnen de gebruikelijke range van 5–8% voor single-cell RNA-seq data.
 
 Deze filtering zorgt ervoor dat alleen hoogwaardige cellen worden meegenomen in de verdere analyse.
 
@@ -208,21 +214,26 @@ DimPlot(e65, reduction = "umap")  # Maakt een UMAP-plot van de cellen om de clus
 
 Om de biologische betekenis van de clusters te bepalen, zijn de top 5 differentieel tot expressie gebrachte genen per cluster geanalyseerd. Deze genen geven inzicht in de identiteit en functie van de cellen binnen elk cluster.
 
-De resultaten laten zien dat elk cluster een specifiek expressieprofiel heeft dat overeenkomt met bekende celtypen in het E6.5 embryo:
+De resultaten laten zien dat elk cluster een specifiek expressieprofiel heeft dat overeenkomt met bekende celtypen in het E6.5 muizenembryo:
 
--   Cluster 0 – Primitive streak / nascent mesoderm. Dit cluster wordt gekenmerkt door expressie van genen zoals *Pbx1*, *Aff3* en *Ldb2*, die betrokken zijn bij transcriptieregulatie en vroege differentiatieprocessen. Deze genexpressie past bij cellen in de primitive streak, waar mesodermvorming plaatsvindt.
+- Cluster 0 – Primitive streak / nascent mesoderm.  
+  Dit cluster wordt gekenmerkt door expressie van genen zoals *Pbx1*, *Aff3*, *Tenm3* en *Igf1r*. Deze genen zijn betrokken bij transcriptieregulatie en vroege differentiatieprocessen en passen bij cellen in de primitive streak, waar mesodermvorming plaatsvindt.
 
--   Cluster 1 – Posterior epiblast (mesoderm-competent). Genen zoals *Ndrg2* en *Hmcn1* zijn verhoogd tot expressie in dit cluster. Deze genen worden geassocieerd met prolifererende en differentieerbare epiblastcellen die competent zijn om mesoderm te vormen.
+- Cluster 1 – Epiblast.  
+  Genen zoals *Dnmt3b*, *Pim2* en *Zfp608* zijn verhoogd tot expressie in dit cluster. Deze genen zijn geassocieerd met proliferatie en epigenetische regulatie, wat past bij relatief ongedifferentieerde epiblastcellen.
 
--   Cluster 2 – Visceral endoderm (VE). Dit cluster toont sterke expressie van genen zoals *Dab2*, *Col4a1* en *Amn*, die bekend zijn voor hun rol in endodermale functies zoals extracellulaire matrixvorming en nutriënttransport. Dit bevestigt de identificatie als visceral endoderm.
+- Cluster 2 – Visceral endoderm.  
+  Dit cluster toont sterke expressie van genen zoals *Dab2*, *Amn* en *Cubn*, die bekend zijn voor hun rol in nutriëntopname en endodermale functies. Dit bevestigt de identificatie als visceraal endoderm.
 
--   Cluster 3 – Extra-embryonic ectoderm (ExE). De expressie van genen zoals *Elf5* en *Sfmbt2* wijst op extra-embryonale cellen. *Elf5* is een bekende marker voor trophectoderm en extra-embryonale structuren, wat deze annotatie ondersteunt.
+- Cluster 3 – Extra-embryonic ectoderm.  
+  De expressie van genen zoals *Elf5*, *Sfmbt2* en *Esrrb* wijst op extra-embryonale cellen. *Elf5* is een bekende marker voor trophectoderm en extra-embryonale structuren.
+
+- Cluster 4 – Endotheel / vasculaire cellen.  
+  Dit cluster wordt gekenmerkt door expressie van genen zoals *Epas1* en *Lama1*, die betrokken zijn bij bloedvatvorming en vasculaire ontwikkeling.
 
 Opvallend is dat veel van de geïdentificeerde features intronische reads bevatten (bijv. *Tenm3-intron*, *Aff3-intron*), wat kan wijzen op actieve transcriptie en de aanwezigheid van ongesplicede RNA-moleculen. Dit is gebruikelijk in single-cell RNA-seq datasets en kan aanvullende informatie geven over transcriptiedynamiek.
 
-De combinatie van deze marker-genen en de ruimtelijke scheiding van clusters in de UMAP bevestigt dat de geïdentificeerde clusters overeenkomen met biologisch relevante celtypen binnen het E6.5 embryo.
-
-Deze resultaten komen overeen met bekende literatuur over vroege muisembryogenese, waarin deze celtypen rond E6.5 worden beschreven.
+De combinatie van deze marker-genen en de ruimtelijke scheiding van clusters in de UMAP bevestigt dat de geïdentificeerde clusters overeenkomen met biologisch relevante celtypen binnen het E6.5 muizenembryo. Deze annotatie sluit aan bij bekende literatuur over vroege muisembryogenese, waarin deze celtypen rond E6.5 worden beschreven.
 
 ```{r Clusterbiomarkers, include=FALSE}
 cluster2.markers <- FindMarkers(e65, ident.1 = 2)     # Zoekt genen die specifiek zijn voor cluster 2 ten opzichte van alle andere cellen
@@ -253,8 +264,14 @@ e65.markers %>%
 DoHeatmap(e65, features = top5$gene) + NoLegend()  # Maakt een heatmap van de expressie van de top 5 genen per cluster en verwijdert de legenda voor een overzichtelijker beeld
 ```
 
+```{r Clusterbiomarkers top 5 genen, include=FALSE}
+top5 %>%
+  arrange(cluster, desc(avg_log2FC)) %>%
+  select(cluster, gene)
+```
+
 ```{r Celltypes toekennen, include=FALSE}
-new.cluster.ids <- c("Epiblast", "Primitive streak / early mesoderm", "Visceral endoderm", "Extraembryonic mesoderm / hemato-vasculair", "Primitive erythroid / bloedcellen")
+new.cluster.ids <- c("Primitive streak / nascent mesoderm", "Epiblast", "Visceral endoderm", "Extra-embryonic ectoderm", "Endotheel / vasculair")
 names(new.cluster.ids) <- levels(e65)
 e65 <- RenameIdents(e65, new.cluster.ids)
 ```
@@ -265,8 +282,8 @@ DimPlot(e65, reduction = "umap", label = TRUE, pt.size = 0.5, label.size = 4, re
 
 # Conclusie
 
-De single-cell RNA-seq analyse van muizenembryo’s op ontwikkelingsstadium E6.5 laat zien dat de dataset bestaat uit meerdere duidelijk te onderscheiden celpopulaties. Na kwaliteitscontrole en filtering konden vijf clusters worden geïdentificeerd, waaronder epiblast, mesoderm, endoderm en extra-embryonale celtypen.
+De single-cell RNA-seq analyse van muizenembryo’s op ontwikkelingsstadium E6.5 laat zien dat de dataset bestaat uit meerdere duidelijk te onderscheiden celpopulaties. Na kwaliteitscontrole en filtering konden vijf clusters worden geïdentificeerd, waaronder epiblast, mesodermale populaties, visceraal endoderm, extra-embryonaal ectoderm en endotheelcellen
 
-Door middel van markeranalyse zijn deze clusters gekoppeld aan biologisch relevante celtypen, waaronder epiblast, mesoderm, endoderm en bloedgerelateerde cellen. Dit weerspiegelt de complexe cellulaire diversiteit en differentiatieprocessen die plaatsvinden tijdens vroege embryonale ontwikkeling.
+Door middel van markeranalyse zijn deze clusters gekoppeld aan biologisch relevante celtypen, waaronder epiblast, mesodermale populaties, visceraal endoderm, extra-embryonaal ectoderm en endotheelcellen. Dit weerspiegelt de complexe cellulaire diversiteit en differentiatieprocessen die plaatsvinden tijdens vroege embryonale ontwikkeling bij de muis.
 
-De combinatie van clustering en markeranalyse maakt het mogelijk om de structuur van het embryo op cellulair niveau te reconstrueren. Deze resultaten vormen een belangrijke basis voor verdere analyses, zoals het bestuderen van ontwikkelingsroutes en genregulatie tijdens embryogenese.
+De combinatie van clustering en markeranalyse maakt het mogelijk om de structuur van het muizenembryo op cellulair niveau te reconstrueren. Deze resultaten vormen een belangrijke basis voor verdere analyses, zoals het bestuderen van ontwikkelingsroutes en genregulatie tijdens muisembryogenese.
