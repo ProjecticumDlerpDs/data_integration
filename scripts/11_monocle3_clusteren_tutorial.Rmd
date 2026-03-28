@@ -32,9 +32,9 @@ beschikbaar is via:
 Als voorbeeld wordt een dataset gebruikt bestaande uit sci-RNA-seq
 (single-cell combinatorial indexing RNA sequencing) data van de *C.
 elegans*. Deze dataset is afkomstig uit het artikel van [Cao & Packer et
-al](https://www.science.org/doi/10.1126/science.aam8940). en is
-gepubliceerd in Comprehensive single‑cell transcriptional profiling of a
-multicellular organism.
+al](https://www.science.org/doi/10.1126/science.aam8940) en is
+gepubliceerd in het artikel "Comprehensive single‑cell transcriptional
+profiling of a multicellular organism".
 
 De analyse bestaat uit de volgende stappen:
 
@@ -42,7 +42,7 @@ De analyse bestaat uit de volgende stappen:
 -   voorbewerking en normalisatie
 -   dimensionale reductie
 -   clustering van cellen
--   batch-effect correctie
+-   batch-effectcorrectie
 -   identificatie van markergenen
 -   annotatie van celtypen
 
@@ -91,14 +91,13 @@ vertoont geeft een geschikt aantal componenten aan.
 cds <- preprocess_cds(cds, num_dim = 100)
 ```
 
-```{r voorbewerking figuur 1, results='hide', fig.cap="Figuur 1: Elbowplot van de principal component analyse (PCA). Op de x-as staan de eerste 100 principal components (PC's) en op de y-as staat de hoeveelheid verklaarde variantie per component. De knik in de grafiek geeft een indicatie van het aantal dimensies dat geschikt is voor verdere analyse."}
+```{r voorbewerking figuur 1, results='hide', fig.cap="Elbowplot van de principal component analyse (PCA). Op de x-as staan de eerste 100 principal components (PC's) en op de y-as staat de hoeveelheid verklaarde variantie per component. De knik in de grafiek geeft een indicatie van het aantal dimensies dat geschikt is voor verdere analyse."}
 plot_pc_variance_explained(cds)
 ```
 
 ## Dimensionale reductie en visualisatie
 
-Na de voorbewerking kan de dataset worden gevisualiseerd met behulp van
-UMAP (Uniform Manifold Approximation and Projection).
+Na de voorbewerking wordt de dataset gevisualiseerd met behulp van UMAP (Uniform Manifold Approximation and Projection).
 
 UMAP is een methode voor dimensionale reductie waarbij complexe
 genexpressiepatronen worden geprojecteerd naar een tweedimensionale
@@ -110,7 +109,7 @@ genexpressie liggen dicht bij elkaar in de plot.
 cds <- reduce_dimension(cds)
 ```
 
-```{r dimentionaliteit verlagen en cellen visualiseren figuur 2, results='hide', fig.cap="Figuur 2: UMAP-visualisatie van alle cellen in de dataset. Elke stip representeert een individuele cel en de positie van de stip is gebaseerd op het genexpressieprofiel van de cel."}
+```{r dimentionaliteit verlagen en cellen visualiseren figuur 2, results='hide', fig.cap="UMAP-visualisatie van alle cellen in de dataset. Elke stip representeert een individuele cel en de positie van de stip is gebaseerd op het genexpressieprofiel van de cel."}
 plot_cells(cds)
 ```
 
@@ -119,7 +118,7 @@ plot_cells(cds)
 In figuur 3 worden de cellen weergegeven en ingekleurd op basis van het
 bekende celtype dat door Cao & Packer is bepaald.
 
-```{r dimentionaliteit verlagen en cellen visualiseren figuur 3, results='hide', fig.cap="Figuur 3: UMAP-visualisatie waarbij cellen zijn gekleurd op basis van het celtype dat in de originele dataset is geannoteerd door Cao & Packer."}
+```{r dimentionaliteit verlagen en cellen visualiseren figuur 3, results='hide', fig.cap="UMAP-visualisatie waarbij cellen zijn gekleurd op basis van het celtype dat in de originele dataset is geannoteerd door Cao & Packer."}
 plot_cells(cds, color_cells_by="cao_cell_type")
 ```
 
@@ -130,11 +129,11 @@ genen te visualiseren. In figuur 4 wordt de expressie van vier genen
 weergegeven (cpna-2, egl-21, ram-2 en inos-1). De intensiteit van de
 kleur geeft aan in welke mate een gen tot expressie komt in een cel.
 
-```{r dimentionaliteit verlagen en cellen visualiseren figuur 4, results='hide', fig.cap="Figuur 4: UMAP-visualisatie van de expressie van vier genen (cpna-2, egl-21, ram-2 en inos-1). De kleurintensiteit geeft de mate van genexpressie weer in individuele cellen."}
+```{r dimentionaliteit verlagen en cellen visualiseren figuur 4, results='hide', fig.cap="UMAP-visualisatie van de expressie van vier genen (cpna-2, egl-21, ram-2 en inos-1). De kleurintensiteit geeft de mate van genexpressie weer in individuele cellen."}
 plot_cells(cds, genes=c("cpna-2", "egl-21", "ram-2", "inos-1"))
 ```
 
-## Batch-effect correctie
+## Batch-effectcorrectie
 
 Bij grootschalige single-cell experimenten worden samples vaak verwerkt
 in meerdere experimentele batches. Dit kan technische verschillen
@@ -146,6 +145,10 @@ gebaseerd op mutual nearest neighbour alignment.
 Na deze correctie liggen cellen uit verschillende batches beter
 overlappend in de UMAP-ruimte, wat aangeeft dat technische variatie is
 verminderd.
+
+Na het uitvoeren van batch-effectcorrectie wordt de dimensionale
+reductie opnieuw uitgevoerd, zodat de UMAP-visualisatie gebaseerd is op
+gecorrigeerde data.
 
 ```{r batch-effecten, include=FALSE}
 cds <- align_cds(cds, num_dim = 100, alignment_group = "plate")
@@ -159,13 +162,20 @@ Cellen worden vervolgens gegroepeerd in clusters met behulp van een
 detection](https://www.nature.com/articles/s41598-019-41695-z)
 algoritme. Na het uitvoeren van het clustering algoritme worden de
 cellen gegroepeerd in clusters op basis van vergelijkbare genexpressie.
-In figuur 5 zijn deze clusters weergegeven.
+In figuur 5 zijn deze clusters weergegeven. De gekozen resolutie bepaalt het aantal clusters en daarmee de mate van detail waarin de cellulaire variatie wordt weergegeven.
+
+De clusters in de UMAP-ruimte zijn duidelijk van elkaar gescheiden, wat
+aangeeft dat cellen met vergelijkbare genexpressie effectief zijn
+gegroepeerd. Sommige clusters liggen dichter bij elkaar, wat kan wijzen
+op verwante celtypen of overgangstoestanden.
+
+
 
 ```{r cellen clusteren voorbewerking figuur 5, include=FALSE}
 cds <- cluster_cells(cds, resolution=1e-5)
 ```
 
-```{r cellen clusteren figuur 5, results='hide', fig.cap="Figuur 5: UMAP-visualisatie van de geclusterde cellen. Elke kleur representeert een cluster van cellen met vergelijkbare genexpressieprofielen."}
+```{r cellen clusteren figuur 5, results='hide', fig.cap="UMAP-visualisatie van de geclusterde cellen. Elke kleur representeert een cluster van cellen met vergelijkbare genexpressieprofielen."}
 plot_cells(cds)
 ```
 
@@ -187,13 +197,19 @@ zichtbaar is:
 -   hoe sterk een gen tot expressie komt
 -   in hoeveel cellen het gen voorkomt
 
+De geïdentificeerde markergenen maken het mogelijk om clusters
+biologisch te interpreteren, doordat specifieke genen kenmerkend zijn
+voor bepaalde celtypen. Hierdoor kan een koppeling worden gemaakt tussen
+clusters en bekende biologische functies.
+
 ## Annotatie van celtypen
 
 Op basis van de geïdentificeerde markergenen en literatuur kunnen
 clusters worden geannoteerd met een biologisch celtype.\
 Op basis van literatuur en de annotatie uit de originele studie van Cao
 & Packer werden de geïdentificeerde partities vervolgens geannoteerd met
-bijbehorende celtypen.
+bijbehorende celtypen. De annotatie is gebaseerd op partitions, die
+grotere groepen van gerelateerde clusters representeren.
 
 ```{r annotatie celtypen, include=FALSE}
 colData(cds)$assigned_cell_type <- as.character(partitions(cds))
@@ -238,7 +254,7 @@ colData(cds)$assigned_cell_type <- dplyr::recode(
 
 In figuur 6 zijn de clusters weergegeven met hun toegewezen celtypen.
 
-```{r cellen voorzien van annotatie op basis van het type figuur 6, results='hide', fig.cap="Figuur 6: UMAP-visualisatie van de clusters waarbij de cellen zijn ingekleurd op basis van het geannoteerde celtype."}
+```{r cellen voorzien van annotatie op basis van het type figuur 6, results='hide', fig.cap="UMAP-visualisatie van de clusters waarbij de cellen zijn ingekleurd op basis van het geannoteerde celtype."}
 plot_cells(cds, group_cells_by="partition", color_cells_by="assigned_cell_type")
 ```
 
@@ -254,7 +270,7 @@ vergelijkbare genexpressie dicht bij elkaar lagen. Vervolgens konden
 markergenen worden geïdentificeerd die kenmerkend zijn voor specifieke
 clusters.
 
-Daarnaast werd batch-effect correctie toegepast om technische
+Daarnaast werd batch-effectcorrectie toegepast om technische
 verschillen tussen experimentele batches te verminderen. Hierdoor werd
 de biologische variatie tussen cellen duidelijker zichtbaar. Op basis
 van de geïdentificeerde markergenen konden de clusters uiteindelijk
@@ -263,3 +279,6 @@ worden geannoteerd met bijbehorende celtypen.
 Hiermee kan worden geconcludeerd dat Monocle3 effectief kan worden
 gebruikt om single-cell RNA-seq data te clusteren en verschillende
 celtypen te identificeren.
+
+De duidelijke scheiding van clusters in de UMAP-ruimte en de identificatie van specifieke markergenen tonen aan dat Monocle3 in staat is om biologisch relevante celtypen betrouwbaar te onderscheiden.
+
