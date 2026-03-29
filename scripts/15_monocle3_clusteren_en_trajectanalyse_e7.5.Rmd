@@ -1,0 +1,306 @@
+---
+title: "15_monocle3_clusteren_en_trajectanalyse_e7.5"
+output: 
+  pdf_document:
+    extra_dependencies: ["float", "ragged2e"] 
+  html_document:
+    df_print: paged
+  word_document: default
+date: "`r Sys.Date()`"
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+# Deelvraag: Hoe kan de data van tijdspunt E7.5 worden ingelezen en geschikt gemaakt voor analyse in Monocle 3?
+
+# Methode
+
+Voor deze analyse is gebruikgemaakt van het Monocle3 pakket in R om single-cell RNA-seq data van het tijdspunt E7.5 te analyseren. De data bestaat uit een matrix met splicing events per cel.
+
+De analyse bestaat uit de volgende stappen:
+
+inlezen van de event count matrix
+opzetten van een Monocle3 CellDataSet (CDS)
+dimensionale reductie met PCA en UMAP
+clustering van cellen
+identificatie van clusterspecifieke genen
+annotatie van clusters
+trajectanalyse en pseudotijdsbepaling
+
+## Het groeperen en classificeren van de cellen
+
+```{r setup, include=FALSE}
+library(monocle3)
+library(dplyr)
+library(data.table)
+library(Matrix)
+library(ggplot2)
+
+knitr::opts_chunk$set(
+  echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  fig.pos = "H",
+  fig.show = "hold"
+)
+
+datadir <- "/home/data/projecticum/splicing/data/"
+
+expression_matrix <- readMM("~/data_integration/bewerkte_data/e75_count_matrix.mtx.gz")
+
+gene_metadata <- read.csv(file.path(datadir, "e75_feature_metadata.csv.gz"),
+                          header = TRUE)
+
+gene_metadata <- data.frame(
+  gene_short_name = gene_metadata[,1],
+  row.names = gene_metadata[,1]
+)
+
+cell_metadata <- read.csv(file.path(datadir, "e75_sample_metadata.csv"),
+                          header = TRUE)
+
+rownames(cell_metadata) <- cell_metadata[,1]
+
+rownames(expression_matrix) <- rownames(gene_metadata)
+colnames(expression_matrix) <- rownames(cell_metadata)
+
+expression_matrix <- round(expression_matrix)
+
+cds <- new_cell_data_set(expression_matrix,
+                         cell_metadata = cell_metadata,
+                         gene_metadata = gene_metadata)
+
+cds
+```
+
+## Verwerk de gegevens vooraf
+
+Tijdens de preprocessing wordt de hoge-dimensionale data gereduceerd tot een beperkter aantal dimensies met behulp van principal component analysis (PCA). In Figuur 1 is een elbowplot weergegeven, waarin per principal component (PC) wordt aangegeven hoeveel variantie wordt verklaard. Het punt waar de curve afvlakt (de “elleboog”) geeft een geschikt aantal dimensies aan om te behouden voor verdere analyse.
+
+```{r voorbewerking, results='hide'}
+cds <- preprocess_cds(cds, num_dim = 10)
+```
+
+```{r voorbewerking figuur 1, results='hide', fig.cap="Elbowplot: Op de x-as zijn 100 PCA components (PC's) weergegeven, op de y-as is de variantie van de PC's weergegeven. "}
+plot_pc_variance_explained(cds)
+```
+
+## Verlaag de dimensionaliteit en visualiseer de cellen
+
+De voorbewerking is klaar, nu kunnen de cellen gevisualieerd worden met behulp van een Uniform Manifold Approximation and Projection (UMAP). Een UMAP is een techniek voor dimensionale reductie. Het zet complexe biologische informatie om in een overzichtelijk figuur. Elke cel wordt weergeven als een stipje. De positie van de cel wordt gebaseerd op de genen die actief zijn binnen de cel.
+
+```{r dimentionaliteit verlagen en cellen visualiseren voorbewerking figuur 2, include=FALSE}
+cds <- reduce_dimension(cds)
+```
+
+Na de preprocessing wordt de data geprojecteerd in een lage-dimensionale ruimte met behulp van UMAP. In Figuur 2 is te zien dat cellen zich groeperen in duidelijke clusters. Cellen met vergelijkbare genexpressie liggen dicht bij elkaar, wat wijst op overeenkomsten in celtype of toestand.
+
+```{r dimentionaliteit verlagen en cellen visualiseren figuur 2, results='hide', fig.cap="UMAP-visualisatie van cellen. Elke stip representeert een cel."}
+plot_cells(cds)
+```
+
+De UMAP kan ook gebruikt worden om de expressie van specifieke genen te visualiseren. In Figuur 3 is de expressie van het gen Tenm3-intron weergegeven. De kleurintensiteit geeft aan in welke mate dit gen tot expressie komt in verschillende cellen. Hieruit blijkt dat genexpressie niet uniform verdeeld is, maar geconcentreerd voorkomt in specifieke clusters.
+
+```{r dimentionaliteit verlagen en cellen visualiseren figuur 3, results='hide', fig.cap="UMAP: Het gen Tenm3-intron wordt weergegeven in de mate dat het voorkomt in de clusters."}
+plot_cells(cds, genes=c("Tenm3-intron"))
+```
+
+## Groepeer cellen in clusters
+
+Cellen worden gegroepeerd met behulp van een community detection algoritme. In Figuur 4 is de clustering van cellen weergegeven in de UMAP-ruimte. Elke kleur en elk nummer vertegenwoordigt een cluster van cellen met vergelijkbare genexpressie.
+
+Deze clusters vormen de basis voor verdere analyse, zoals het identificeren van celtypen en ontwikkelingsroutes.
+
+```{r cellen clusteren voorbewerking figuur 4, include=FALSE}
+cds <- cluster_cells(cds)
+```
+
+```{r cellen clusteren figuur 4, results='hide', fig.cap="UMAP: Clustering van cellen. Elke kleur en elk nummer representeert een cluster met vergelijkbare genexpressie."}
+plot_cells(cds, color_cells_by="cluster", group_label_size = 5)
+```
+
+## Zoek markergenen die door elk cluster tot expressie worden gebracht
+
+Om de clusters biologisch te interpreteren, is gekeken naar genen die specifiek tot expressie komen in elk cluster. In plaats van gebruik te maken van de standaard top_markers() functie (die computationeel intensief is en foutmeldingen gaf), is hier een alternatieve methode toegepast.
+
+Eerst is de gemiddelde genexpressie per cluster berekend. Vervolgens is per gen de specificiteit bepaald door de expressie in één cluster te vergelijken met de gemiddelde expressie in alle andere clusters. Genen met de hoogste specificiteit worden beschouwd als meest kenmerkend voor een cluster.
+
+Daarnaast zijn ruis- en housekeeping-genen (zoals mitochondriale genen en kleine RNA’s) gefilterd om de interpretatie te verbeteren.
+
+Deze aanpak levert een snelle en robuuste identificatie van clusterspecifieke genen op, die gebruikt kan worden voor biologische interpretatie.
+
+In tegenstelling tot een klassieke dotplot (zoals in de tutorial), worden de resultaten hier direct als lijst van genen per cluster weergegeven.
+
+```{r markergenen, include=FALSE}
+# Zorg dat cluster info bestaat
+colData(cds)$cluster <- cds@clusters$UMAP$clusters
+
+# 1. Expressie matrix ophalen
+expr_mat <- counts(cds)
+expr_mat <- as.matrix(expr_mat)
+
+# 2. Clusters ophalen
+clusters <- colData(cds)$cluster
+
+# 3. Filter ruis-genen weg
+valid_genes <- rownames(expr_mat)[
+  !grepl("^mt-", rownames(expr_mat)) &
+  !grepl("^Rn", rownames(expr_mat)) &
+  !grepl("^Rnu", rownames(expr_mat)) &
+  !grepl("^Rpph", rownames(expr_mat)) &
+  !grepl("^Rmrp", rownames(expr_mat))
+]
+
+expr_mat_filtered <- expr_mat[valid_genes, ]
+
+# 4. Gemiddelde expressie per cluster
+agg_expr <- sapply(unique(clusters), function(cl) {
+  cells <- which(clusters == cl)
+  rowMeans(expr_mat_filtered[, cells, drop = FALSE])
+})
+
+# 5. Specificiteit berekenen (cluster vs rest)
+specificity <- sapply(1:ncol(agg_expr), function(i) {
+  agg_expr[, i] - rowMeans(agg_expr[, -i, drop = FALSE])
+})
+
+colnames(specificity) <- colnames(agg_expr)
+
+# 6. Top specifieke genen per cluster
+top_genes_specific <- apply(specificity, 2, function(x) {
+  names(sort(x, decreasing = TRUE))[1:10]
+})
+
+# 7. Bekijk resultaat
+top_genes_specific
+```
+
+
+
+## Voorzie de cellen van een annotatie op basis van het type
+
+Op basis van de geïdentificeerde clusterspecifieke genen en bekende literatuur over embryonale ontwikkeling zijn de clusters handmatig geannoteerd naar biologische celtypen.
+
+In Figuur 6 zijn de clusters voorzien van biologisch geïnterpreteerde namen, waaronder:
+
+- Epiblast
+- Neuro-epiblast / patterning
+- Mesoderm (ECM en migrerend)
+- Visceral endoderm
+- Endothelial progenitors
+- Endothelial / basement membrane
+- Extra-embryonic ectoderm
+- Metabolic / differentiating cells
+
+Deze annotatie maakt het mogelijk om de biologische betekenis van de clusters beter te begrijpen en vormt de basis voor de trajectanalyse.
+
+Zoals zichtbaar in de UMAP (figuur 5), liggen deze celtypen ruimtelijk gescheiden maar tonen ze duidelijke overgangen, wat wijst op onderliggende ontwikkelingsprocessen.
+
+```{r cellen voorzien van annotatie op basis van het type voorbewerking figuur 5, include=FALSE}
+colData(cds)$cluster <- cds@clusters$UMAP$clusters
+colData(cds)$celltype <- dplyr::recode(
+  as.character(colData(cds)$cluster),
+  "1" = "Neuro-epiblast / patterning",
+  "2" = "Epiblast",
+  "3" = "Mesoderm (ECM)",
+  "4" = "Mesoderm (migrating)",
+  "5" = "Metabolic / differentiating",
+  "6" = "Visceral endoderm",
+  "7" = "Endothelial progenitors",
+  "8" = "Endothelial / basement membrane",
+  "9" = "Extra-embryonic ectoderm"
+)
+```
+
+```{r cellen voorzien van annotatie op basis van het type figuur 5, results='hide', fig.cap="UMAP: Annotatie van clusters met celtypen. Kleuren representeren verschillende celtypen."}
+plot_cells(cds, color_cells_by = "celltype", group_label_size = 5)
+```
+
+## Trajectanalyse
+
+Na clustering en annotatie is de onderliggende relatie tussen cellen onderzocht met behulp van trajectanalyse. Hierbij wordt een continu ontwikkelingspad gereconstrueerd op basis van veranderingen in genexpressie.
+
+Om één samenhangend traject te verkrijgen, zijn alle cellen geforceerd in één partitie geplaatst voordat de trajectgrafiek werd geleerd. Dit voorkomt dat Monocle3 losse trajecten per cluster maakt.
+
+In Figuur 6 is de geleerde trajectgrafiek weergegeven. De lijnen verbinden cellen langs mogelijke ontwikkelingsroutes. De aanwezigheid van vertakkingen wijst op differentiatieprocessen waarbij cellen zich ontwikkelen naar verschillende celtypen.
+
+```{r trajectanalyse voorbewerking figuur 6, include=FALSE}
+cds@clusters$UMAP$partitions <- factor(rep(1, ncol(cds)))
+names(cds@clusters$UMAP$partitions) <- colnames(cds)
+
+cds <- learn_graph(cds)     # Leer de trajectgrafiek
+```
+
+```{r trajectanalyse figuur 6, results='hide', fig.cap="UMAP met trajectgrafiek. Lijnen geven mogelijke ontwikkelingsroutes tussen cellen weer."}
+plot_cells(cds,
+           color_cells_by = "celltype",
+           label_groups_by_cluster = FALSE,
+           label_leaves = FALSE,
+           label_branch_points = FALSE,
+           group_label_size = 5)         # Visualiseer het traject
+```
+
+Om de volgorde van cellen langs het traject te bepalen, zijn cellen geordend in pseudotijd. Hierbij is het Epiblast-cluster gekozen als startpunt, aangezien dit biologisch overeenkomt met een vroege ontwikkelingsfase.
+
+In Figuur 7 is de pseudotijd weergegeven als een kleurgradiënt. Cellen met lage pseudotijd bevinden zich aan het begin van het traject, terwijl cellen met hogere pseudotijd verder gedifferentieerd zijn.
+
+De visualisatie laat zien dat:
+
+Epiblast-cellen zich aan het begin bevinden
+Mesoderm- en endotheelcellen verder in het traject liggen
+Extra-embryonale en endodermale populaties aparte takken vormen
+
+Dit komt overeen met bekende biologische ontwikkelingsroutes in het embryo.
+
+```{r trajectanalyse voorbewerking figuur 7, include=FALSE}
+root_cells <- colnames(cds)[colData(cds)$celltype == "Epiblast"]
+
+cds <- order_cells(cds, root_cells = root_cells)
+```
+
+```{r trajectanalyse figuur 7, results='hide', fig.cap="Pseudotijdvisualisatie. Kleur geeft de geschatte ontwikkelingsvolgorde van cellen weer."}
+plot_cells(cds,
+           color_cells_by = "pseudotime",
+           label_cell_groups = FALSE,
+           label_leaves = FALSE,
+           label_branch_points = FALSE)        # Visualiseer pseudotijd
+```
+
+In Figuur 8 is de verdeling van pseudotijd per celtype weergegeven met behulp van een boxplot.
+
+Hieruit blijkt dat:
+
+Epiblast-cellen de laagste pseudotijd hebben
+Mesoderm- en endotheelcellen hogere pseudotijdwaarden vertonen
+Differentiërende en extra-embryonale cellen zich verspreid over het traject bevinden
+
+Dit ondersteunt de gekozen richting van het traject en bevestigt dat de reconstructie biologisch plausibel is.
+
+```{r trajectanalyse voorbewerking figuur 8, include=FALSE}
+df <- data.frame(
+  pseudotime = pseudotime(cds),
+  celltype = colData(cds)$celltype
+)
+```
+
+```{r trajectanalyse figuur 8, results='hide', fig.cap="Boxplot van pseudotijd per celtype."}
+ggplot(df, aes(x = celltype, y = pseudotime)) +
+  geom_boxplot() +
+  theme_minimal() +
+  xlab("Celtype") +
+  ylab("Pseudotime") +
+  coord_flip()
+```
+
+# Conclusie
+
+In deze analyse is single-cell RNA-seq data van het tijdspunt E7.5 succesvol ingelezen en verwerkt met behulp van het Monocle3 pakket. Door middel van preprocessing en dimensionale reductie konden cellen worden gevisualiseerd in een UMAP-representatie, waarin duidelijke clusters zichtbaar waren.
+
+De clustering van cellen maakte het mogelijk om groepen met vergelijkbare genexpressie te identificeren. Door gebruik te maken van een alternatieve methode voor het bepalen van clusterspecifieke genen konden de clusters efficiënt en betrouwbaar biologisch worden geïnterpreteerd.
+
+Op basis hiervan zijn de clusters geannoteerd naar relevante celtypen die passen bij embryonale ontwikkeling.
+
+Met behulp van trajectanalyse werd vervolgens een continu ontwikkelingspad gereconstrueerd. De pseudotijdanalyse liet een duidelijke overgang zien van vroege Epiblast-cellen naar meer gedifferentieerde celtypen zoals mesoderm, endotheel en endoderm.
+
+Deze resultaten tonen aan dat de data van tijdspunt E7.5 geschikt is voor analyse in Monocle3 en dat de combinatie van clustering en trajectanalyse waardevolle inzichten biedt in de dynamiek van celontwikkeling. De analyse bevestigt dat celontwikkeling een continu proces is, waarin cellen geleidelijk differentiëren naar verschillende gespecialiseerde celtypen.
