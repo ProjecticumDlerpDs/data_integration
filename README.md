@@ -28,7 +28,9 @@ In deze githup repository zullen alle scripts en data worden opgeslagen. Niet al
 
 De workflow van dit project bestaat uit de volgende stappen.
 
-### ![](images/clipboard-2078142371.png)
+![](images/clipboard-3190061725.png)
+
+------------------------------------------------------------------------
 
 ## Deelvragen
 
