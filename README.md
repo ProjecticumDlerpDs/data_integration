@@ -56,12 +56,16 @@ fs::dir_tree(path = ".", recurse = 1)
 ```
 
 ```         
-data_integration
 ├── LICENSE
 ├── README.html
 ├── README.md
 ├── analyse
+│   └── marker_file.txt
 ├── bewerkte_data
+│   ├── e65_count_matrix.mtx.gz
+│   ├── e75_count_matrix.mtx.gz
+│   ├── e85_count_matrix.mtx.gz
+│   └── e95_count_matrix.mtx.gz
 ├── data_integration.Rproj
 ├── raw_data
 │   ├── e65_count_matrix.csv
@@ -79,7 +83,7 @@ data_integration
 │   ├── e95_count_matrix.csv.gz
 │   ├── e95_feature_metadata.csv.gz
 │   ├── e95_sample_metadata.csv
-│   └── pbmc3k_filtered_gene_bc_matrices.tar
+│   └── filtered_gene_bc_matrices
 └── scripts
     ├── 01_seurat_tutorial.Rmd
     ├── 01_seurat_tutorial.pdf
@@ -93,12 +97,41 @@ data_integration
     ├── 08_e6.5_data_laden.Rmd
     ├── 08_e6.5_data_laden.pdf
     ├── 09_e7.5_data_laden.Rmd
-    ├── 10_monocle3_clusteren_tutorial.Rmd
-    ├── 10_monocle3_clusteren_tutorial.pdf
-    ├── 11_monocle3_clusteren_e6.5.Rmd
-    ├── 12_monocle3_trajectories_tutorial.Rmd
-    └── 12_monocle3_trajectories_tutorial.pdf
+    ├── 09_e7.5_data_laden.pdf
+    ├── 10_e8.5_data_laden.Rmd
+    ├── 10_e8.5_data_laden.pdf
+    ├── 11_monocle3_installeren.R
+    ├── 12_monocle3_clusteren_tutorial.Rmd
+    ├── 12_monocle3_clusteren_tutorial.pdf
+    ├── 13_monocle3_trajectories_tutorial.Rmd
+    ├── 13_monocle3_trajectories_tutorial.pdf
+    ├── 14_monocle3_clusteren_en_trajectanalyse_e6.5.Rmd
+    ├── 14_monocle3_clusteren_en_trajectanalyse_e6.5.pdf
+    ├── 15_monocle3_clusteren_en_trajectanalyse_e7.5.Rmd
+    ├── 15_monocle3_clusteren_en_trajectanalyse_e7.5.pdf
+    ├── 16_monocle3_clusteren_en_trajectanalyse_e6.5_en_e7.5.Rmd
+    └── 16_monocle3_clusteren_en_trajectanalyse_e6.5_en_e7.5.pdf
 ```
+
+------------------------------------------------------------------------
+
+## Uitleg van bestanden en uitvoervolgorde
+
+Dit project bestaat uit een reeks scripts die samen een complete analysepipeline vormen voor het reconstrueren van ontwikkelingsroutes in muizenembryo’s. De analyse verloopt stapsgewijs, waarbij de output van een script vaak dient als input voor een volgend script. Daarom is het belangrijk dat de bestanden in de juiste volgorde worden uitgevoerd.
+
+De workflow begint met een introductie in Seurat via het bestand `01_seurat_tutorial.Rmd`. Dit script dient als voorbereiding op de analyse en laat zien hoe single-cell data kan worden ingelezen, gefilterd en geclusterd. Het bestand `02_seurat_data_integration_tutorial.Rmd` is eveneens opgenomen in de repository, maar speelt geen rol in de uiteindelijke analysepipeline. Dit script is toegevoegd omdat in een vroeg stadium van het project het plan bestond om data-integratie met Seurat toe te passen. Uiteindelijk is ervoor gekozen om over te stappen naar Monocle3 voor de verdere analyse, waardoor dit onderdeel niet meer wordt gebruikt.
+
+De daadwerkelijke pipeline begint met het omzetten van de ruwe data. De bestanden `03_e6.5_data_omzetten_van_csv_naar_mtx.R` tot en met `06_e9.5_data_omzetten_van_csv_naar_mtx.R` maken het mogelijk om **per embryonaal tijdspunt afzonderlijk** de data om te zetten van CSV naar MTX-formaat. Dit is handig wanneer je slechts één specifiek tijdspunt wilt analyseren. Het script `07_data_omzetten_van_csv_naar_mtx.R` biedt daarnaast de mogelijkheid om **alle tijdspunten in één keer** te converteren. Het MTX-formaat is efficiënter voor opslag en verwerking en vormt de basis voor de verdere analyse. Zonder deze geconverteerde bestanden kunnen de volgende scripts niet worden uitgevoerd.
+
+Na de conversie wordt de data ingelezen en voorbewerkt met Seurat. Dit gebeurt in de bestanden `08_e6.5_data_laden.Rmd`, `09_e7.5_data_laden.Rmd` en `10_e8.5_data_laden.Rmd`. In deze scripts worden de datasets per embryonale dag geladen, gecontroleerd op kwaliteit, genormaliseerd en geclusterd. Het resultaat van deze stap zijn Seurat-objecten die inzicht geven in de verschillende celpopulaties binnen de dataset.
+
+Voordat de trajectory-analyse kan worden uitgevoerd, moet het package Monocle3 geïnstalleerd worden. Dit gebeurt in `11_monocle3_installeren.R`. Daarnaast zijn er twee tutorialbestanden (`12_monocle3_clusteren_tutorial.Rmd` en `13_monocle3_trajectories_tutorial.Rmd`) die extra uitleg geven over de werking van Monocle3 en pseudotime-analyse. Deze zijn bedoeld ter ondersteuning, maar zijn niet noodzakelijk voor het uitvoeren van de pipeline.
+
+De kern van de trajectory-analyse vindt plaats in de daaropvolgende scripts. In `14_monocle3_clusteren_en_trajectanalyse_e6.5.Rmd` en `15_monocle3_clusteren_en_trajectanalyse_e7.5.Rmd` wordt de analyse volledig uitgevoerd binnen Monocle3. In deze stap worden cellen geclusterd en geordend langs een pseudotime-as, waarmee ontwikkelingsroutes worden gereconstrueerd en inzicht ontstaat in de dynamiek van celontwikkeling.
+
+Tot slot wordt in `16_monocle3_clusteren_en_trajectanalyse_e6.5_en_e7.5.Rmd` een gecombineerde analyse uitgevoerd waarin meerdere datasets samen worden bekeken. Hierdoor kunnen bredere ontwikkelingspatronen en trajectstructuren worden geïdentificeerd die niet zichtbaar zijn binnen afzonderlijke datasets.
+
+Samengevat vormt dit project één doorlopende analysepipeline waarin ruwe single-cell RNA-sequencingdata eerst wordt voorbereid en geanalyseerd met Seurat, waarna Monocle3 wordt gebruikt om ontwikkelingsroutes en pseudotime-trajecten te reconstrueren. Het is essentieel om de scripts in de juiste volgorde uit te voeren, omdat latere stappen afhankelijk zijn van eerder gegenereerde output.
 
 ------------------------------------------------------------------------
 
