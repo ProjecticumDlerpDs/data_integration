@@ -175,7 +175,7 @@ op verwante celtypen of overgangstoestanden.
 cds <- cluster_cells(cds, resolution=1e-5)
 ```
 
-```{r cellen clusteren figuur 5, results='hide', fig.cap="UMAP-visualisatie van de geclusterde cellen. Elke kleur representeert een cluster van cellen met vergelijkbare genexpressieprofielen."}
+```{r cellen clusteren figuur 5, results='hide', fig.cap="UMAP-visualisatie van de geclusterde cellen. Elke stip representeert een individuele cel. Elke kleur representeert een cluster van cellen met vergelijkbare genexpressieprofielen."}
 plot_cells(cds)
 ```
 
@@ -185,7 +185,7 @@ Om de clusters biologisch te interpreteren worden markergenen
 geïdentificeerd. Dit zijn genen die sterk tot expressie komen in een
 specifieke cluster.
 
-```{r expressie markergenen zoeken voorbewerking figuur 6, include=FALSE}
+```{r expressie markergenen zoeken, include=FALSE}
 marker_test_res <- top_markers(cds,                            # cds = CellDataSet, is specifiek voor monocle3
                                group_cells_by="partition",     # group_cells_by="partition" vergelijkt genexpressie tussen partitions
                                reference_cells=1000)           # reference_cells=1000 geeft aan dat er een referentieset van maximaal 1000 cellen gebruikt wordt
@@ -211,7 +211,7 @@ Op basis van literatuur en de annotatie uit de originele studie van Cao
 bijbehorende celtypen. De annotatie is gebaseerd op partitions, die
 grotere groepen van gerelateerde clusters representeren.
 
-```{r annotatie celtypen, include=FALSE}
+```{r annotatie celtypen voorbewerking figuur 6, include=FALSE}
 colData(cds)$assigned_cell_type <- as.character(partitions(cds))
 
 colData(cds)$assigned_cell_type <- dplyr::recode(
@@ -254,7 +254,7 @@ colData(cds)$assigned_cell_type <- dplyr::recode(
 
 In figuur 6 zijn de clusters weergegeven met hun toegewezen celtypen.
 
-```{r cellen voorzien van annotatie op basis van het type figuur 6, results='hide', fig.cap="UMAP-visualisatie van de clusters waarbij de cellen zijn ingekleurd op basis van het geannoteerde celtype."}
+```{r annotatie celtypen figuur 6, results='hide', fig.cap="UMAP-visualisatie van de clusters waarbij de cellen zijn ingekleurd op basis van het geannoteerde celtype. Elke stip representeert een individuele cel."}
 plot_cells(cds, group_cells_by="partition", color_cells_by="assigned_cell_type")
 ```
 

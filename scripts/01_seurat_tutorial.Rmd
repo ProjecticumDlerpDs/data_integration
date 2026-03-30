@@ -22,16 +22,18 @@ workflow is gebaseerd op de officiële Seurat-tutorial, deze is
 beschikbaar via de volgende site:
 <https://satijalab.org/seurat/articles/pbmc3k_tutorial>. Als voorbeeld
 werd een publieke dataset gebruikt bestaande uit 2.700 perifere bloed
-mononucleaire cellen (PBMC’s) gebruikt, gegenereerd met het 10X
+mononucleaire cellen (PBMC’s), gegenereerd met het 10X
 Genomics-platform. De sequencing is uitgevoerd op een Illumina NextSeq
 500 en de ruwe data is beschikbaar via de volgende site:
 <https://cf.10xgenomics.com/samples/cell/pbmc3k/pbmc3k_filtered_gene_bc_matrices.tar.gz>.
 
-De analyse bestaat uit een vaste workflow: - kwaliteitscontrole en
-filtering van cellen - normalisatie en selectie van informatieve genen -
-dimensiereductie en clustering van cellen - identificatie van
-cluster-specifieke genexpressie - biologische interpretatie en annotatie
-van clusters
+De analyse bestaat uit een vaste workflow:
+
+-   kwaliteitscontrole enfiltering van cellen
+-   normalisatie en selectie van informatieve genen
+-   dimensiereductie en clustering van cellen
+-   identificatie vancluster-specifieke genexpressie
+-   biologische interpretatie en annotatievan clusters
 
 Deze stappen zijn bedoeld om technische ruis te verminderen en
 biologische variatie tussen cellen inzichtelijk te maken.
@@ -42,6 +44,7 @@ library(dplyr)                # Laadt dplyr voor data-manipulatie met pipelines 
 library(Seurat)               # Laadt Seurat voor single-cell RNA-seq data-analyse
 library(patchwork)            # Laadt patchwork om meerdere ggplot-figuren te combineren
 library(here)                 # Laadt here om bestandspaden reproduceerbaar te beheren
+library(ggplot2)
 
 # Globale knitr-instellingen
 knitr::opts_chunk$set(        # Stelt globale opties in voor alle knitr code chunks in het document
@@ -106,16 +109,16 @@ pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")  # Voegt ee
 head(pbmc@meta.data, 5)  # Toont de eerste vijf rijen van de metadata van het Seurat-object
 ```
 
-```{r QC and selecting cells Figure 1, results='hide', fig.cap="Vioolplots: Er zijn drie vioolplots naast elkaar weergegeven. In alle drie de vioolplots wordt op de x-as de dataset met pbmc's weergegeven. Elke stipje is een cel. Links wordt op de y-as het aantal unieke features weergegeven. In het midden wordt op de y-as het aantal RNA binnen de cel weergegeven. Rechts wordt op de y-as het percentage mitochondriale genen weergegeven."}
+```{r QC and selecting cells Figure 1, results='hide', fig.cap="Vioolplots: Er zijn drie vioolplots naast elkaar weergegeven. In alle drie de vioolplots wordt op de x-as de dataset met pbmc's weergegeven. Elke stip representeert een individuele cel. Links wordt op de y-as het aantal unieke features weergegeven. In het midden wordt op de y-as het aantal RNA binnen de cel weergegeven. Rechts wordt op de y-as het percentage mitochondriale genen weergegeven."}
 VlnPlot(pbmc, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)  # Visualiseert de verdeling van het aantal genen, het totaal aantal reads en het mitochondriaal percentage per cel in drie violinplots naast elkaar
 ```
 
 ```{r QC and selecting cells data inladen voor figure 2, results='hide'}
-plot1 <- FeatureScatter(pbmc, feature1 = "nCount_RNA", feature2 = "percent.mt")    # Maakt een scatterplot die de relatie toont tussen het totaal aantal reads en het mitochondriaal percentage per cel
-plot2 <- FeatureScatter(pbmc, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")  # Maakt een scatterplot die de relatie toont tussen het totaal aantal reads en het aantal gedetecteerde genen per cel
+plot1 <- FeatureScatter(pbmc, feature1 = "nCount_RNA", feature2 = "percent.mt") + theme(axis.text.x = element_text(size = 8))  # Maakt een scatterplot die de relatie toont tussen het totaal aantal reads en het mitochondriaal percentage per cel
+plot2 <- FeatureScatter(pbmc, feature1 = "nCount_RNA", feature2 = "nFeature_RNA") + theme(axis.text.x = element_text(size = 8)) # Maakt een scatterplot die de relatie toont tussen het totaal aantal reads en het aantal gedetecteerde genen per cel
 ```
 
-```{r QC and selecting cells Figure 2, fig.cap="FeatureScatterplots: Er zijn twee scatterplots naast elkaar weergegeven, bij beide scatterplots staat op de x-as het aantal RNA binnen de cel. Elk stipje is een cel. Links is op de y-as het percentage mitochondriale genen weergegeven, waarbij alleen cellen meegenomen zijn die een percentage lager dan 5% mitochondriale genen hebben. Rechts is op de y-as het aantal unieke features per cel weergegeven, waarbij alleen de cellen meegenomen zijn die tussen de 200 en 2500 unieke features hebben."}
+```{r QC and selecting cells Figure 2, fig.cap="FeatureScatterplots: Er zijn twee scatterplots naast elkaar weergegeven, bij beide scatterplots staat op de x-as het aantal RNA binnen de cel. Elke stip representeert een individuele cel. Links is op de y-as het percentage mitochondriale genen weergegeven, waarbij alleen cellen meegenomen zijn die een percentage lager dan 5% mitochondriale genen hebben. Rechts is op de y-as het aantal unieke features per cel weergegeven, waarbij alleen de cellen meegenomen zijn die tussen de 200 en 2500 unieke features hebben."}
 plot1 + plot2  # Combineert de twee scatterplots tot één figuur met behulp van patchwork
 ```
 
@@ -180,7 +183,7 @@ print(pbmc[["pca"]], dims = 1:5, nfeatures = 5)  # Print een samenvatting van de
 VizDimLoadings(pbmc, dims = 1:2, reduction = "pca")  # Visualiseert welke genen het sterkst bijdragen aan de eerste twee PCA-componenten
 ```
 
-```{r Lineaire dimensionale reductie uitvoeren Figure 5, fig.cap="DimPlot, Op de x-as wordt PC1 geplot en op de y-as wordt PC2 geplot. Elke stip representeert een cel."}
+```{r Lineaire dimensionale reductie uitvoeren Figure 5, fig.cap="DimPlot, Op de x-as wordt PC1 geplot en op de y-as wordt PC2 geplot. Elke stip representeert een individuele cel."}
 DimPlot(pbmc, reduction = "pca") + NoLegend()  # Visualiseert de cellen in PCA-ruimte en verbergt de legenda
 ```
 
@@ -236,7 +239,7 @@ trekken.
 pbmc <- RunUMAP(pbmc, dims = 1:10)  # Past UMAP toe om cellen te projecteren in een lage-dimensionale ruimte op basis van de eerste tien PCA-componenten
 ```
 
-```{r Niet-lineaire dimensionale reductie uitvoeren Figure 8, fig.cap="DimPlot: Op de x-as wordt umap_1 geplot en op de y-as wordt umap_2 geplot. Elke stip representeert een cel. De kleur geeft aan bij welk cluster deze cel hoort."}
+```{r Niet-lineaire dimensionale reductie uitvoeren Figure 8, fig.cap="DimPlot: Op de x-as wordt umap_1 geplot en op de y-as wordt umap_2 geplot. Elke stip representeert een individuele cel. De kleur geeft aan bij welk cluster deze cel hoort."}
 DimPlot(pbmc, reduction = "umap")  # Visualiseert de cellen in UMAP-ruimte waarbij vergelijkbare cellen dicht bij elkaar liggen
 ```
 
@@ -272,7 +275,7 @@ pbmc.markers %>%
 ```
 
 ```{r Clusterbiomarkers Figure 11, fig.cap="DoHeatMap: Op de x-as worden de clusters weergegeven en op de y-as worden de verschillende markers weergegeven. De 10 belangrijkste markers worden per cluster weergegeven. De gele kleur geeft een hoge expressie van het gen aan en de paarse kleur een lage expressie."}
-DoHeatmap(pbmc, features = top10$gene) + NoLegend()  # Visualiseert de expressie van de top 10 markergenen per cluster in een heatmap zonder legenda
+DoHeatmap(pbmc, features = top10$gene) + NoLegend() + theme(axis.text.y = element_text(size = 5)) # Visualiseert de expressie van de top 10 markergenen per cluster in een heatmap zonder legenda
 ```
 
 ## Toewijzen van celtype-identiteit aan clusters

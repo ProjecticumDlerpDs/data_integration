@@ -11,22 +11,22 @@ header-includes:
 
 # Deelvraag: Hoe maak je trajectories in Monocle3?
 
-Trajectanalyse in Monocle3 wordt gebruikt om te beschrijven hoe cellen zich door een biologisch proces bewegen, bijvoorbeeld tijdens differentiatie. In plaats van cellen in vaste groepen in te delen, probeert Monocle3 de onderliggende volgorde van veranderingen in genexpressie te reconstrueren. Het doel is om cellen te positioneren langs een continu pad (een traject) en zo inzicht te krijgen in overgangstoestanden en mogelijke vertakkingen. 
+Trajectanalyse in Monocle3 wordt gebruikt om te beschrijven hoe cellen zich door een biologisch proces bewegen, bijvoorbeeld tijdens differentiatie. In plaats van cellen in vaste groepen in te delen, probeert Monocle3 de onderliggende volgorde van veranderingen in genexpressie te reconstrueren. Het doel is om cellen te positioneren langs een continu pad (een traject) en zo inzicht te krijgen in overgangstoestanden en mogelijke vertakkingen.
 
 # Methode
 
 Voor deze analyse is gebruikgemaakt van het Monocle3 pakket in R, een tool die speciaal is ontwikkeld voor het reconstrueren van ontwikkelingsprocessen in single-cell RNA-seq data. In tegenstelling tot clustering, waarbij cellen in discrete groepen worden ingedeeld, richt Monocle3 zich op het modelleren van continue veranderingen in genexpressie.
 
-De gebruikte dataset bestaat uit single-cell RNA-seq data van C. elegans embryo’s, waarin cellen zich in verschillende ontwikkelingsstadia bevinden. Dit maakt de dataset geschikt voor trajectanalyse, omdat een continu ontwikkelingsproces kan worden gereconstrueerd.
+De gebruikte dataset bestaat uit single-cell RNA-seq data van *C. elegans* embryo’s, waarin cellen zich in verschillende ontwikkelingsstadia bevinden. Dit maakt de dataset geschikt voor trajectanalyse, omdat een continu ontwikkelingsproces kan worden gereconstrueerd.
 
 De analyse is uitgevoerd volgens de Monocle3 trajectory tutorial en omvat de volgende stappen:
 
-- preprocessing en dimensionale reductie
-- batch-effect correctie
-- clustering van cellen
-- leren van een trajectgrafiek (trajectory inference)
-- ordenen van cellen in pseudotijd
-- visualisatie van trajecten en genexpressie
+-   preprocessing en dimensionale reductie
+-   batch-effect correctie
+-   clustering van cellen
+-   leren van een trajectgrafiek (trajectory inference)
+-   ordenen van cellen in pseudotijd
+-   visualisatie van trajecten en genexpressie
 
 Tijdens de preprocessing wordt de data gereduceerd tot een lager aantal dimensies om de belangrijkste biologische variatie te behouden. Vervolgens wordt batch-effect correctie toegepast om technische variatie tussen metingen te verwijderen.
 

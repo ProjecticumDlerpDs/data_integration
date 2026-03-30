@@ -116,7 +116,7 @@ DimPlot(ifnb, reduction = "umap", group.by = c("stim", "seurat_annotations"))   
 
 Zoals weergegeven in figuur 2 clusteren cellen na integratie voornamelijk op basis van biologisch celtype en niet langer op basis van conditie. Dit laat zien dat de integratiestap succesvol is in het verwijderen van ongewenste variatie, waardoor cellen uit verschillende condities beter vergelijkbaar zijn.
 
-```{r Data-integratie figuur 3, echo=FALSE, results='hide', message=FALSE, warning=FALSE, fig.cap="CTRLSTIM: Controle en gestimuleerde cellen worden naast elkaar weergegeven. Elke cel wordt weergegeven als een stipje. Er zijn 16 clusters weergegeven met elk een eigen kleur."}
+```{r Data-integratie figuur 3, echo=FALSE, results='hide', message=FALSE, warning=FALSE, fig.cap="CTRLSTIM: Controle en gestimuleerde cellen worden naast elkaar weergegeven. Elke stip representeert een individuele cel. Er zijn 16 clusters weergegeven met elk een eigen kleur."}
 DimPlot(ifnb, reduction = "umap", split.by = "stim")    # Toont de UMAP-projectie gesplitst per stimulatieconditie zodat controle- en gestimuleerde cellen afzonderlijk zichtbaar zijn
 ```
 
@@ -198,7 +198,7 @@ ifnb <- RunPCA(ifnb)    # Voert principal component analysis uit op de getransfo
 ifnb <- RunUMAP(ifnb, dims = 1:30)    # Maakt een UMAP-projectie op basis van de eerste 30 principal components
 ```
 
-```{r SCTransform-normalisatie figuur 5, echo=FALSE, results='hide', message=FALSE, warning=FALSE, fig.cap="UMAP-visualisatie na SCTransform-normalisatie. Cellen zijn gekleurd op basis van conditie en celtype. De figuur laat zien dat SCTransform een alternatieve methode biedt om technische variatie te corrigeren."}
+```{r SCTransform-normalisatie figuur 5, echo=FALSE, results='hide', message=FALSE, warning=FALSE, fig.cap="UMAP-visualisatie na SCTransform-normalisatie. Elke stip representeert een individuele cel. Cellen zijn gekleurd op basis van conditie en celtype. De figuur laat zien dat SCTransform een alternatieve methode biedt om technische variatie te corrigeren."}
 DimPlot(ifnb, reduction = "umap", group.by = c("stim", "seurat_annotations"))   # Visualiseert de UMAP-projectie waarbij cellen worden gegroepeerd op basis van stimulatieconditie en celannotatie
 ```
 
