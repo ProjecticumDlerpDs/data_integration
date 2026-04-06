@@ -7,3 +7,5 @@
 bewerkte_data/
 raw_data/
 analyse/
+renv/library/
+renv/staging/

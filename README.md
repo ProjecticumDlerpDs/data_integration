@@ -119,11 +119,22 @@ fs::dir_tree(path = ".", recurse = 1)
 
 ## Uitleg van bestanden en uitvoervolgorde
 
+Voor het beheren van R-packages is gebruikgemaakt van het package renv. Hiermee zijn alle gebruikte packages en bijbehorende versies vastgelegd in het bestand: renv.lock
+
+Om de juiste R-omgeving te herstellen, voer de volgende stappen uit in R:
+
+```         
+install.packages("renv")
+renv::restore()
+```
+
+Hiermee worden automatisch alle benodigde packages geïnstalleerd met de juiste versies, zodat de analyses reproduceerbaar zijn.
+
 Dit project bestaat uit een reeks scripts die samen een complete analysepipeline vormen voor het reconstrueren van ontwikkelingsroutes in muizenembryo’s. De analyse verloopt stapsgewijs, waarbij de output van een script vaak dient als input voor een volgend script. Daarom is het belangrijk dat de bestanden in de juiste volgorde worden uitgevoerd.
 
 De workflow begint met een introductie in Seurat via het bestand `01_seurat_tutorial.Rmd`. Dit script dient als voorbereiding op de analyse en laat zien hoe single-cell data kan worden ingelezen, gefilterd en geclusterd. Het bestand `02_seurat_data_integration_tutorial.Rmd` is eveneens opgenomen in de repository, maar speelt geen rol in de uiteindelijke analysepipeline. Dit script is toegevoegd omdat in een vroeg stadium van het project het plan bestond om data-integratie met Seurat toe te passen. Uiteindelijk is ervoor gekozen om over te stappen naar Monocle3 voor de verdere analyse, waardoor dit onderdeel niet meer wordt gebruikt.
 
-De daadwerkelijke pipeline begint met het omzetten van de ruwe data. De bestanden `03_e6.5_data_omzetten_van_csv_naar_mtx.R` tot en met `06_e9.5_data_omzetten_van_csv_naar_mtx.R` maken het mogelijk om **per embryonaal tijdspunt afzonderlijk** de data om te zetten van CSV naar MTX-formaat. Dit is handig wanneer je slechts één specifiek tijdspunt wilt analyseren. Het script `07_data_omzetten_van_csv_naar_mtx.R` biedt daarnaast de mogelijkheid om **alle tijdspunten in één keer** te converteren. Het MTX-formaat is efficiënter voor opslag en verwerking en vormt de basis voor de verdere analyse. Zonder deze geconverteerde bestanden kunnen de volgende scripts niet worden uitgevoerd.
+De daadwerkelijke pipeline begint met het omzetten van de ruwe data. De bestanden `03_e6.5_data_omzetten_van_csv_naar_mtx.R` tot en met `06_e9.5_data_omzetten_van_csv_naar_mtx.R` maken het mogelijk om per embryonaal tijdspunt afzonderlijk de data om te zetten van CSV naar MTX-formaat. Dit is handig wanneer je slechts één specifiek tijdspunt wilt analyseren. Het script `07_data_omzetten_van_csv_naar_mtx.R` biedt daarnaast de mogelijkheid om alle tijdspunten in één keer te converteren. Het MTX-formaat is efficiënter voor opslag en verwerking en vormt de basis voor de verdere analyse. Zonder deze geconverteerde bestanden kunnen de volgende scripts niet worden uitgevoerd.
 
 Na de conversie wordt de data ingelezen en voorbewerkt met Seurat. Dit gebeurt in de bestanden `08_e6.5_data_laden.Rmd`, `09_e7.5_data_laden.Rmd` en `10_e8.5_data_laden.Rmd`. In deze scripts worden de datasets per embryonale dag geladen, gecontroleerd op kwaliteit, genormaliseerd en geclusterd. Het resultaat van deze stap zijn Seurat-objecten die inzicht geven in de verschillende celpopulaties binnen de dataset.
 
