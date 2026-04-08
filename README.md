@@ -125,7 +125,18 @@ Om de juiste R-omgeving te herstellen, voer de volgende stappen uit in R:
 
 ```         
 install.packages("renv")
+renv::activate()
 renv::restore()
+```
+
+Let op: het kan voorkomen dat sommige packages (zoals GitHub packages) niet automatisch geïnstalleerd worden. Installeer deze handmatig indien nodig:
+
+```         
+r install.packages("remotes")  
+
+remotes::install_github("cole-trapnell-lab/monocle3") 
+remotes::install_github("bnprks/BPCells") 
+remotes::install_github("satijalab/seurat-data")
 ```
 
 Hiermee worden automatisch alle benodigde packages geïnstalleerd met de juiste versies, zodat de analyses reproduceerbaar zijn.
