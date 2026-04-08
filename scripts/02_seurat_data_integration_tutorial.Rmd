@@ -45,6 +45,12 @@ De analyse bestaat uit de volgende stappen:
 -   vergelijking met SCTransform-normalisatie
 
 ```{r setup, include=FALSE}
+install.packages("remotes")
+remotes::install_github("satijalab/seurat-data")
+install.packages("BiocManager")
+BiocManager::install("multtest")
+install.packages("metap")
+
 library(Seurat)               # Laadt het Seurat-pakket voor single-cell RNA-seq analyse
 library(SeuratData)           # Laadt het SeuratData-pakket om voorbeelddatasets te downloaden en gebruiken
 library(patchwork)            # Laadt patchwork om meerdere ggplot-figuren te combineren
